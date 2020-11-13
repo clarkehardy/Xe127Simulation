@@ -26,7 +26,9 @@ plot_name = 'alpha_slide'
 error_plot = True
 
 # save figures here
-path = '/nfs/slac/g/exo_data8/exo_data/users/cahardy/outputs/'
+home_dir = os.getenv('WORKING_DIR')
+data_dir = os.getenv('DATA_DIR')
+path = '{}/outputs'.format(data_dir)
 
 # set plotting style
 plt.rc('figure', dpi=200, figsize=(4,3), facecolor='w')
@@ -38,8 +40,7 @@ plt.rc('lines', linewidth=1.5)
 # ***********************************************************************************************************
 
 # load true lightmap model
-home_dir = os.getenv('HOME')
-model_dir = '{}/nEXO/analysis'.format(home_dir)
+model_dir = '{}/lm-analysis'.format(home_dir)
 lm_nn = LightMap.load_model(model_dir, 'LightMapNN')
 print('\n', lm_nn, '\n')
 

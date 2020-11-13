@@ -25,7 +25,7 @@ if not chroma:
     # ***********************************************************************************************************
     # import and read simulation files
     filenames = [
-        '{}/blenardo/lightmap_example/PhotonBomb_gps_ActiveOptical_seed{}.nEXOevents.root'.format(data_dir, i)
+        '{}/../blenardo/lightmap_example/PhotonBomb_gps_ActiveOptical_seed{}.nEXOevents.root'.format(data_dir, i)
         for i in range(1, 1001)]
 
     # read data and compute efficiency
@@ -49,7 +49,7 @@ else:
         filelist = []
         with open('filelist.txt','r') as infile:
             for line in infile:
-                filelist.append('{}/akojamil/chroma/data/nexo/2020_sensitivity_lightmap_new/'.format(data_dir)+line[:-1])
+                filelist.append('{}/../akojamil/chroma/data/nexo/2020_sensitivity_lightmap_new/'.format(data_dir)+line[:-1])
             
         # read out keys necessary for lightmap training
         Input = pd.DataFrame()

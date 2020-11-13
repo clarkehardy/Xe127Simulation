@@ -16,8 +16,9 @@ from scipy.stats import binned_statistic_2d
 # ***********************************************************************************************************
 
 # save figures here
-home_dir = os.getenv('HOME')
-path = '{}/analysis/outputs/'.format(home_dir)
+home_dir = os.getenv('WORKING_DIR')
+data_dir = os.getenv('DATA_DIR')
+path = '{}/outputs'.format(data_dir)
 
 '''
 Arguments:
@@ -42,51 +43,51 @@ alphas = args.alphas
 both_peaks = args.both_peaks
 standoff = args.standoff
 description = args.description
-'''
+
 # simulation files to import
 if testing==False and alphas==False:
-    sets = [['/nfs/slac/g/exo_data8/exo_data/users/cahardy/xe127_sims/TPCVessel_127Xe_1k.root'],\
-            ['/nfs/slac/g/exo_data8/exo_data/users/cahardy/xe127_sims/TPCVessel_127Xe_10k.root'],\
-            ['/nfs/slac/g/exo_data8/exo_data/users/cahardy/xe127_sims/TPCVessel_127Xe_100k_10.root'],\
-            ['/nfs/slac/g/exo_data8/exo_data/users/cahardy/xe127_sims/TPCVessel_127Xe_250k1.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/xe127_sims/TPCVessel_127Xe_250k_1.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/xe127_sims/TPCVessel_127Xe_250k_2.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/xe127_sims/TPCVessel_127Xe_250k_3.root']]
+    sets = [['{}/xe127_sims/TPCVessel_127Xe_1k.root'.format(data_dir)],\
+            ['{}/xe127_sims/TPCVessel_127Xe_10k.root'.format(data_dir)],\
+            ['{}/xe127_sims/TPCVessel_127Xe_100k_10.root'.format(data_dir)],\
+            ['{}/xe127_sims/TPCVessel_127Xe_250k1.root'.format(data_dir),\
+             '{}/xe127_sims/TPCVessel_127Xe_250k_1.root'.format(data_dir),\
+             '{}/xe127_sims/TPCVessel_127Xe_250k_2.root'.format(data_dir),\
+             '{}/xe127_sims/TPCVessel_127Xe_250k_3.root'.format(data_dir)]]
     name = ['1k_'+description,'10k_'+description,'100k_'+description,'1M_'+description]
 elif testing==True and alphas==False:
-    sets = [['/nfs/slac/g/exo_data8/exo_data/users/cahardy/xe127_sims/TPCVessel_127Xe_100k_10.root']]
+    sets = [['{}/xe127_sims/TPCVessel_127Xe_100k_10.root'.format(data_dir)]]
     name = ['100k_'+description]
 elif testing==True and alphas==True:
-    sets = [['/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_10.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_11.root']]
+    sets = [['{}/rn222_sims/TPCVessel_222Rn_a50k_10.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_11.root'.format(data_dir)]]
     name = ['a100k_'+description]
 else:
-    sets = [['/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_10.root'],\
-            ['/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_10.root'],\
-            ['/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_10.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_11.root'],\
-            ['/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_12.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_13.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_14.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_15.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_16.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_17.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_18.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_19.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_20.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_21.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_22.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_23.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_24.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_25.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_26.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_27.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_28.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_29.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_30.root',\
-             '/nfs/slac/g/exo_data8/exo_data/users/cahardy/rn222_sims/TPCVessel_222Rn_a50k_31.root']]
+    sets = [['{}/rn222_sims/TPCVessel_222Rn_a50k_10.root'.format(data_dir)],\
+            ['{}/rn222_sims/TPCVessel_222Rn_a50k_10.root'.format(data_dir)],\
+            ['{}/rn222_sims/TPCVessel_222Rn_a50k_10.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_11.root'.format(data_dir)],\
+            ['{}/rn222_sims/TPCVessel_222Rn_a50k_12.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_13.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_14.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_15.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_16.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_17.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_18.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_19.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_20.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_21.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_22.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_23.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_24.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_25.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_26.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_27.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_28.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_29.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_30.root'.format(data_dir),\
+             '{}/rn222_sims/TPCVessel_222Rn_a50k_31.root'.format(data_dir)]]
     name = ['a1k_'+description,'a10k_'+description,'a100k_'+description,'a1M_'+description]
-'''
+
 # **********************************************************************************************************
 # DEFINE ANY FUNCTIONS HERE
 # **********************************************************************************************************
@@ -173,13 +174,12 @@ def proj2d(x,y,xlabel='x',ylabel='y',bins=200,s=0.001,color='blue'):
 # *********************************************************************************************************
 
 # load TPC used for training
-with open('tpc.pkl', 'rb') as handle:
+with open('{}/lm-analysis/tpc.pkl'.format(home_dir), 'rb') as handle:
     tpc = pickle.load(handle)
 print(tpc)
 
 # load model
-model_dir = '{}/analysis'.format(home_dir)
-#model_dir = path+'LightMap_100k_hist_test'
+model_dir = '{}/lm-analysis'.format(home_dir)
 lm_nn = LightMap.load_model(model_dir, 'LightMapNN')
 print('\n', lm_nn, '\n')
 
@@ -451,20 +451,6 @@ for i in range(len(name)):
     # save lightmap neural net
     LightMap.save_model(path+'LightMap_'+name[i],lm_nn_again.kind,lm_nn_again)
 
-    # now histogram for comparison
-    #lm_hist = LightMap.LightMapHistXYZ(tpc,nx=20)
-    #lm_hist.fit(*train_again)
-    #print(lm_hist)
-
-    # now with spline
-    #lm_spline = LightMap.LightMapSplineXYZ(tpc,20)
-    #lm_spline.fit(*train_again)
-    #print(lm_spline)
-
-    # save lightmaps
-    #LightMap.save_model(path+'LightMap_'+name[i],lm_hist.kind,lm_hist)
-    #LightMap.save_model(path+'LightMap_'+name[i],lm_spline.kind,lm_spline)
-
     # *****************************************************************************************************
     # PLOT FINAL LIGHTMAP FOR SIMULATED DATA
     # *****************************************************************************************************
@@ -498,5 +484,3 @@ for i in range(len(name)):
     plt.savefig(path+'compare_'+name[i]+'.png',bbox_inches='tight')
     plt.close('all')
     del lm_nn_again
-    #del lm_hist
-    #del lm_spline
