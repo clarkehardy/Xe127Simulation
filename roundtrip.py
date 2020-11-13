@@ -18,7 +18,7 @@ from scipy.stats import binned_statistic_2d
 # save figures here
 home_dir = os.getenv('WORKING_DIR')
 data_dir = os.getenv('DATA_DIR')
-path = '{}/outputs'.format(data_dir)
+path = '{}/outputs/'.format(data_dir)
 
 '''
 Arguments:
@@ -189,8 +189,6 @@ d = plot_lm_rz(ax,lm_nn)
 ax.set_title('True Lightmap')
 plt.savefig(path+'original.png',bbox_inches='tight')
 
-plt.show()
-sys.exit()
 # *********************************************************************************************************
 # LOOP THROUGH ALL DATASETS
 # *********************************************************************************************************
