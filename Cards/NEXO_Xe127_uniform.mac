@@ -1,0 +1,46 @@
+/analysis/setOutputROOTTreeName nEXOevents
+
+/control/verbose 1
+#/run/verbose 1
+#/tracking/verbose 1
+
+/nEXO/det/checkOverlap true
+
+
+# Use Baseline 2017
+#/control/execute ./yamls/Baseline2017.mac
+/control/execute ./yamls/Baseline2019.mac
+
+# If you want to record thermal electrons and
+# scintillation photons, need to turn NEST on
+# using the following switch:
+/EXOPhysicsList/enableLight true
+
+# If you want to turn off only one of the above:
+#/analysis/setSaveOP false
+#/analysis/setSaveTE false
+
+# If you want to do photon tracking with Geant4.
+# Note that unless this is turned on fNOP will
+# be set to 0 for all events even if NEST is on.
+#/analysis/setPropagateOP 1
+
+/run/initialize
+
+/generator/setGenerator gps 
+
+/gps/particle ion 
+/gps/energy 0 keV 
+/gps/ion 54 127
+/grdm/nucleusLimits 127 127 54 54
+
+/gps/pos/type Volume
+/gps/pos/shape Cylinder
+/gps/pos/centre 0 0 -1022 mm
+#/gps/pos/radius 642.5 mm
+#/gps/pos/halfz 652.88 mm
+#/gps/pos/confine /nEXO/TPCVessel
+/gps/pos/radius 638.5 mm
+/gps/pos/halfz 738.5 mm
+/gps/pos/confine /nEXO/TPCInternals/LXe/ActiveRegion
+
