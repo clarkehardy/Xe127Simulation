@@ -1,0 +1,121 @@
+# Geant4 macro for baseline 2017
+# 
+# Raymond Tsang, Mar 30, 2017
+
+# ==============
+# Vessel       #
+# ==============
+
+/nEXO/TPCInternals/TPCRadius 638.5 mm
+/nEXO/TPCInternals/TPCHeight 1277 mm
+
+/nEXO/TPCVessel/AllenCylFlatEnd/InnerRadius 638.5 mm
+/nEXO/TPCVessel/AllenCylFlatEnd/InnerLength 1277 mm
+/nEXO/TPCVessel/AllenCylFlatEnd/Thickness 3 mm
+/nEXO/TPCVessel/AllenCylFlatEnd/EndsThickness 13.38 mm
+
+/nEXO/TPCExternals/TPCRadius 638.5 mm
+/nEXO/TPCExternals/TPCHeight 1277 mm
+/nEXO/TPCExternals/TPCVesselSideThickness 3 mm
+/nEXO/TPCExternals/TPCVesselEndsThickness 13.38 mm
+
+# ==============
+# Internals    #
+# ==============
+
+# Cathode
+/nEXO/TPCInternals/CathodeRadialStandoff 61.85 mm
+/nEXO/TPCInternals/CathodeThickness 0.127 mm
+/nEXO/TPCInternals/CathodeStandoff 75 mm
+/nEXO/TPCInternals/BulgeRadius 5 mm
+
+# Field Cage
+# -- the only option is 5
+/nEXO/TPCInternals/FieldCageOption 5
+# -- field rings
+/nEXO/TPCInternals/FieldRingRadialThickness 10 mm
+/nEXO/TPCInternals/FieldRingZThickness 4 mm
+/nEXO/TPCInternals/FieldRingPitch 20 mm
+/nEXO/TPCInternals/FieldRingRadialStandoff 61.85 mm
+/nEXO/TPCInternals/CathodeToBottomRingDistance 19.82 mm
+/nEXO/TPCInternals/AnodeToTopRingDistance 19.31 mm
+# -- support rods and spacers
+/nEXO/TPCInternals/SupportLegOuterRadius 1.5875 mm
+/nEXO/TPCInternals/SupportLegInnerRadius 0 mm
+/nEXO/TPCInternals/SupportSpacerOuterRadius 3.175 mm
+/nEXO/TPCInternals/SupportSpacerInnerRadius 1.5875 mm
+
+# SiPMs
+# -- 1: Simplified, 2: Regular
+/nEXO/TPCInternals/SiPMOption 2
+# -- Applicable to SiPMOption 1 and 2
+/nEXO/TPCInternals/SiPMStaveRadialStandoff 10.76 mm
+/nEXO/TPCInternals/SiPMStaveZStandoff 20 mm
+/nEXO/TPCInternals/SiPMStaveThickness 3 mm
+/nEXO/TPCInternals/SiPMModuleThickness 1 mm
+/nEXO/TPCInternals/SiPMUnitSiThickness 0.3 mm
+/nEXO/TPCInternals/SiPMUnitQuartzThickness 0.0015 mm
+# -- Applicable to SiPMOption 2
+/nEXO/TPCInternals/NSiPMStaves 24
+/nEXO/TPCInternals/NSiPMModulesX 2
+/nEXO/TPCInternals/NSiPMModulesZ 15
+/nEXO/TPCInternals/SiPMModuleSpacing 1 mm
+/nEXO/TPCInternals/SiPMModuleMargin 0 mm
+/nEXO/TPCInternals/NSiPMUnitsX 8
+/nEXO/TPCInternals/NSiPMUnitsZ 8
+/nEXO/TPCInternals/SiPMUnitSideLength 9.5 mm
+/nEXO/TPCInternals/SiPMUnitSpacing 0.75 mm
+/nEXO/TPCInternals/SiPMUnitMargin 0.375 mm
+
+# Charge Tiles
+# -- 1: Simplified, 2: Regular, 3: Detailed
+/nEXO/TPCInternals/AnodeOption 2
+# -- Applicable to all anode options
+/nEXO/TPCInternals/AnodeRadialStandoff 2.88 mm
+/nEXO/TPCInternals/AnodeStandoff 18.87 mm
+/nEXO/TPCInternals/ChargeModuleThickness 0.5 mm
+/nEXO/TPCInternals/ChargeModuleSupportThickness 3 mm
+# -- Applicable to AnodeOption 2 and 3
+/nEXO/TPCInternals/ChargeModuleLength 100.5 mm
+/nEXO/TPCInternals/ChargeModuleBackingThickness 0.5 mm
+# -- Applicable to AnodeOption 3
+/nEXO/TPCInternals/ChargeModuleSupportWidth 30 mm
+/nEXO/TPCInternals/ChargeModuleGlueThickness 0.762 mm
+/nEXO/TPCInternals/ChargeModuleGlueRadius 0.381 mm
+/nEXO/TPCInternals/ChargeModuleGluePosition 45 mm
+/nEXO/TPCInternals/ChargeModuleChipLength 10 mm
+/nEXO/TPCInternals/ChargeModuleChipThickness 1 mm
+/nEXO/TPCInternals/ChargeModuleChipPosition 10 mm
+/nEXO/TPCInternals/ChargePadDiagonalLength 6 mm
+/nEXO/TPCInternals/ChargePadThickness 0.001 mm
+/nEXO/TPCInternals/ChargePadLinkLength 0.064 mm
+/nEXO/TPCInternals/ChargePadLinkHeight 0.025 mm
+
+# ==============
+# Externals    #
+# ==============
+
+/nEXO/TPCExternals/setVersion 2
+
+# HV
+/nEXO/TPCExternals/setHVConfig 0
+/nEXO/TPCExternals/HVFeedthruAzimuthalPosition 45. deg
+/nEXO/TPCExternals/HVFeedthruRadialStandoff 70. mm
+/nEXO/TPCExternals/HVFeedthruDiameter 50. mm
+/nEXO/TPCExternals/HVFeedthruLength 100. mm
+/nEXO/TPCExternals/HVFeedthruWallThickness 1.651 mm
+/nEXO/TPCExternals/HVTubeDiameter 15.875 mm
+/nEXO/TPCExternals/HVTubeWallThickness 1.651 mm
+/nEXO/TPCExternals/HVTubeRadiusOfCurvature 200. mm
+/nEXO/TPCExternals/HVTubeZOffset 0 mm
+#/nEXO/TPCExternals/HVTubeLength 5075 mm  # Correct length, but too long to fit in HFE
+/nEXO/TPCExternals/HVTubeLength 1.5 m
+/nEXO/TPCInternals/HVPlungerRadius 10. mm
+/nEXO/TPCInternals/HVPlungerPhi 45. deg
+
+# Calib guide tubes
+/nEXO/TPCExternals/CalibGuideTubesOption 1 
+/nEXO/TPCExternals/CalibGuideTubesPhi 0 deg
+/nEXO/TPCExternals/CalibGuideTubesOuterRadius 4.7625 mm
+/nEXO/TPCExternals/CalibGuideTubesThickness 1.651 mm
+

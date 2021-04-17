@@ -9,7 +9,7 @@
 
 # Use Baseline 2017
 #/control/execute ./yamls/Baseline2017.mac
-/control/execute ./yamls/Baseline2019.mac
+/control/execute ./Macros/Baseline2019.mac
 
 # If you want to record thermal electrons and
 # scintillation photons, need to turn NEST on

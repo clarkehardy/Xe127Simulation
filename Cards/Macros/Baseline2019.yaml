@@ -1,0 +1,281 @@
+################################################################################
+# Example card in YAML
+# Contact: Raymond Tsang, rhmtsang@gmail.com
+# Created: Jan 10, 2019
+################################################################################
+
+RunTitle: Baseline2019  # ID for this set of simulations. Used as prefix for generated files.
+
+# Select the parts of the software to be run
+RunDetectorSimulation: 1           # 1=yes, 0=no to run the Geant4 simulation
+RunChargeSimulation:   1           # 1=yes, 0=no to run the charge simulation
+RunClustering:         0           # 1=yes, 0=no to run the clustering (Non existent)
+RunReconstruction:     1           # 1=yes, 0=no to run the reconstruction 
+RunFastlight:          0           # 1=yes, 0=no to run the fast light simulation (requires lightmap)
+
+# Configurations for the platform on which the software is run
+System: 
+  # Cluster farm choices: local, LLNL, SLAC, OSG. (For docker, use "local")
+  Farm:            local    # This is currently ignored. Define appropriate BatchFarmCall below, e.g. msub, condor_submit, etc.
+  BatchFarmCall:   "" 
+  FullnEXOSimPath: "python ./RunDetSim_new.py"
+  PythonCommand:   python
+  #SetupFile:       /opt/nexo/software/setup.sh
+
+  # Working directory where macros and bash scripts are stored
+  FileTopDir: ./output
+  JobsFullOutputPath:     "[FileTopDir]/jobs"    # output directory of job scripts
+  G4FullOutputPath:       "[FileTopDir]/g4"      # output directory of G4 macros and files
+  ClusterFullOutputPath:  "[FileTopDir]/cluster" # output directory of clustered files
+  ReconFullOutputPath:    "/p/lustre2/nexouser/brodsky3/senspaper/recon"   # output directory of reconstructed files
+  FileNamePattern:        "[OutputNamePrefix]_[Isotope]_[Location]_seed[Seed]"
+  #FileNamePattern:        "[OutputNamePrefix]_[Geometry]_[Isotope]_[Location]_seed[Seed]"
+
+  JobHeader: |
+    #!/bin/bash
+    uname -a
+    grep "\(model name\|bogomips\)" /proc/cpuinfo
+    free
+    echo
+
+# Settings for detector simulation in Geant4
+DetectorSimulation:
+
+  # Name of the output root tree
+  G4TreeName: nEXOevents
+  TPCCenter: [0, 0, -1022.6] 
+
+  # Example of varying TPC dimensions
+  # Note: There can be multiple entries in "LinkDimensions". However the lists of linked dimensions must not overlap.
+  # Remember to include "[Geometry]" in the FileNamePattern line under "System".
+  #Geometries:
+  #  LinkDimensions: 
+  #    - ["Radius", "Height"]                  # Radii and heights change in tandem. Not limited to two variables. 
+  #                                            # Also notice this is a list of lists.
+  #  Radius:         ["628.5","638.5","648.5"] # Radii of some part (same length as the list of heights)
+  #  Height:         ["1297","1277","1257"]    # Heights of some part (same length as the list of Radii)
+  #
+  # Macro Template
+  MacroModel: |
+    /control/verbose 1
+    /nEXO/det/checkOverlap false
+    
+    ## Use Baseline 2019
+    /control/execute ./yamls/Baseline2019.mac
+    
+    # Turn on scintillation simulation, if desired:
+    /EXOPhysicsList/enableLight true
+    /run/initialize
+    
+    # Turn on NEST
+    /analysis/setPropagateOP 0
+    /analysis/setSaveOP 1
+    /analysis/setPropagateTE 0
+    /analysis/setSaveTE 1
+
+  # Event Generation
+  LocationType: ScriptConfinement
+  Parents:
+    U238: 
+      - ["Pa234","1"]
+      - ["Bi214","1"]
+      - ["Bi210","1"]
+    Th232: 
+      - ["Ac228","1"]
+      - ["Bi212","1"]
+      - ["Tl208","0.36"]
+    Rn222: 
+      - ["Bi214","1"]
+    bb2nSplit: 
+      - ["bb2nBulk","0.99997835"] 
+      - ["bb2nTail","2.165E-05"]
+  
+  # Volumes in which primary particles are generated
+  # The three entries in the arrays are: total number of events, number of jobs, and starting seed number.
+  Locations: 
+    /nEXO/TPCExternals/OuterCryostat:
+      U238: [1000000000,100,1]
+      Th232: [1000000000,100,1]
+      K40: [1000000000,100,1]
+      Co60: [1000000000,100,1]
+    /nEXO/TPCExternals/OuterCryostatLiner:
+      U238: [1000000000,100,1]
+      Th232: [1000000000,100,1]
+      K40: [1000000000,100,1]
+      Co60: [1000000000,100,1]
+    /nEXO/TPCExternals/OuterCryostatSupport:
+      U238: [1000000000,100,1]
+      Th232: [1000000000,100,1]
+      K40: [1000000000,100,1]
+      Co60: [1000000000,100,1]
+    /nEXO/TPCExternals/InnerCryostat:
+      U238: [1000000000,100,1]
+      Th232: [1000000000,100,1]
+      K40: [1000000000,100,1]
+      Co60: [1000000000,100,1]
+    /nEXO/TPCExternals/InnerCryostatLiner:
+      U238: [1000000000,100,1]
+      Th232: [1000000000,100,1]
+      K40: [1000000000,100,1]
+      Co60: [1000000000,100,1]
+    /nEXO/TPCExternals/InnerCryostatSupport:
+      U238: [1000000000,100,1]
+      Th232: [1000000000,100,1]
+      K40: [1000000000,100,1]
+      Co60: [1000000000,100,1]
+    /nEXO/TPCExternals/HFE:
+      U238: [1000000000,100,1]
+      Th232: [1000000000,100,1]
+      K40: [1000000000,100,1]
+      Co60: [1000000000,100,1]
+    /nEXO/TPCExternals/HVTube:
+      U238: [100000000,20,1]
+      Th232: [100000000,20,1]
+      K40: [100000000,20,1]
+      Co60: [100000000,20,1]
+    /nEXO/TPCExternals/HVCable:
+      U238: [100000000,20,1]
+      Th232: [100000000,20,1]
+      K40: [100000000,20,1]
+      Co60: [100000000,20,1]
+    /nEXO/TPCExternals/HVFeedthruBox:
+      U238: [100000000,10,1]
+      Th232: [100000000,10,1]
+      K40: [100000000,10,1]
+      Co60: [100000000,10,1]
+    /nEXO/TPCExternals/HVFeedthruCore:
+      U238: [100000000,10,1]
+      Th232: [100000000,10,1]
+      K40: [100000000,10,1]
+      Co60: [100000000,10,1]
+    /nEXO/TPCInternals/HVPlunger:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+    /nEXO/TPCExternals/CalibrationGuideTube1:
+      U238: [100000000,20,1]
+      Th232: [100000000,20,1]
+      K40: [100000000,20,1]
+      Co60: [100000000,20,1]
+    /nEXO/TPCExternals/CalibrationGuideTube2:
+      U238: [100000000,20,1]
+      Th232: [100000000,20,1]
+      K40: [100000000,20,1]
+      Co60: [100000000,20,1]
+    /nEXO/TPCExternals/RepeaterBoxShell:
+      U238: [100000000,20,1]
+      Th232: [100000000,20,1]
+      K40: [100000000,20,1]
+      Co60: [100000000,20,1]
+    /nEXO/TPCExternals/TPCSupport:
+      U238: [100000000,10,1]
+      Th232: [100000000,10,1]
+      K40: [100000000,10,1]
+      Co60: [100000000,10,1]
+    /nEXO/TPCVessel:
+      U238: [100000000,10,1]
+      Th232: [100000000,10,1]
+      K40: [100000000,10,1]
+      Co60: [100000000,10,1]
+    /nEXO/TPCInternals/FieldRing:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+      Cs137: [10000000,10,1]
+      Al26: [10000000,10,1]
+    /nEXO/TPCInternals/SupportRodsAndSpacers:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+      Al26: [100000000,10,1]
+    /nEXO/TPCInternals/Cathode:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+      Al26: [10000000,10,1]
+    /nEXO/TPCInternals/Bulge:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+    /nEXO/TPCInternals/SiPMModule:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+    /nEXO/TPCInternals/SiPMStave:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+      Ag110m_117.595: [1000000000,10,1]
+    /nEXO/TPCInternals/SiPMSubstrate:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+    /nEXO/TPCInternals/SiPM: 
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+    /nEXO/TPCInternals/ChargeModuleBacking:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+      Ag110m_117.595: [1000000000,10,1]
+    /nEXO/TPCInternals/ChargeModuleSupport:
+      U238: [10000000,10,1]
+      Th232: [10000000,10,1]
+      K40: [10000000,10,1]
+      Co60: [10000000,10,1]
+    /nEXO/TPCInternals/LXe:
+      Rn222: [10000000,10,1]
+      Xe137: [10000000,10,1]
+    /nEXO/TPCInternals/LXe/ActiveRegion:
+      Rn222: [10000000,10,1]
+      Xe137: [10000000,10,1]
+    FullLXe:
+      bb2nSplit: [100000000,100,1]
+      bb0n: [100000000,100,1]
+      B8NuElectronRecoil: [100000000,100,1]
+
+ChargeSimulation:
+
+  PadSize: 6  # mm
+  EField: 380 # V/cm
+  ElectronLifetime: 10000 # us
+  SamplingInterval: 0.5 #
+  OverSampleRatio: 50 #
+  SignalType: bb0n  # "--type"
+  WeightPotentialType: Pads  # "--coType"
+
+  Induction: 1        # 1 to turn on induction simulation
+  SaveWaveform: 1     # 1 to save waveforms
+
+  TileMapPath: /u/xo/zpli/data/nEXO/NEXOTOP/nexo-offline/data/tilesMap_6mm.txt
+  LocalMapPath: /u/xo/zpli/data/nEXO/NEXOTOP/nexo-offline/data/localChannelsMap_6mm.txt
+  NoiseLibraryPath: /u/xo/zpli/data/nEXO/NEXOTOP/nexo-offline/data/noise_lib.root
+  WPFilePath: /u/xo/zpli/data/nEXO/NEXOTOP/nexo-offline/data/singleStripWP6mm.root
+
+Reconstruction:
+  
+  ReconTreeName: reconTree
+  FullReconstructionPath: "python ./RunSensRecon.py"   # from nexo-offline/Analysis/SensitivityRecon/share/RunSensRecon.py
+
+Merge:
+  Path:                         "./MergeIntoPlainTrees.py"               # Path to the merge python script
+  MergeJobsPath:                "[FileTopDir]/merge-jobs"                # Output directory where merge jobs are saved
+  MergedTreesPath:              "[FileTopDir]/merged"                    # Output directory where merged trees are saved
+  MergedTreesFileNamePattern:   "[OutputNamePrefix]_[Parent]_[Location]" # File name pattern for both merge jobs and merged trees
+  
+# Other settings (work in progress) 
+FastLightSimulation:
+
+  
+ 
