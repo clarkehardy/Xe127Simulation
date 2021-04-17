@@ -5,6 +5,7 @@
 
 import os
 import Sniper
+import time
 
 def get_parser():
   import argparse
@@ -34,6 +35,8 @@ def get_parser():
 
 
 if __name__ == "__main__":
+  start_time = time.time()
+
   parser = get_parser()
   args = parser.parse_args()
   print(args)
@@ -98,3 +101,7 @@ if __name__ == "__main__":
 
   task.show()
   task.run()
+
+  time_elapsed = time.time()-start_time
+  print('Simulation finished in {:4.4} min'.format(time_elapsed/60.))
+

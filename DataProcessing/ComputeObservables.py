@@ -32,7 +32,8 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
     
     weighted_radius = []
     weighted_drift = []
-    
+    weighted_x = []
+    weighted_y = []
     
     counter = 0
 
@@ -95,14 +96,15 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
         x_weights = np.array(x_weights)
         y_weights = np.array(y_weights)
         
-        weighted_x = np.sum(x_positions*(charge_weights*x_weights))/np.sum(charge_weights*x_weights)
-        weighted_y = np.sum(y_positions*(charge_weights*y_weights))/np.sum(charge_weights*y_weights)
+        this_weighted_x = np.sum(x_positions*(charge_weights*x_weights))/np.sum(charge_weights*x_weights)
+        this_weighted_y = np.sum(y_positions*(charge_weights*y_weights))/np.sum(charge_weights*y_weights)
         
-        weighted_radius.append( np.sqrt(weighted_x**2 + weighted_y**2) )
+        weighted_radius.append( np.sqrt(this_weighted_x**2 + this_weighted_y**2) )
         weighted_drift.append(\
                              np.sum(drift_times*charge_weights)/np.sum(charge_weights)
                              )
-        
+        weighted_x.append(this_weighted_x)
+        weighted_y.append(this_weighted_y)        
         
         nonzero_mask = np.invert(row['fElecChannels.fChannelCharge']==0) # true if collection
 
@@ -135,7 +137,8 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
     output_dict['num_channels_induction'] = np.array(num_channels_induction)
     output_dict['weighted_radius'] = np.array(weighted_radius)
     output_dict['weighted_drift'] = np.array(weighted_drift)
-    
+    output_dict['weighted_x'] = np.array(weighted_x)
+    output_dict['weighted_y'] = np.array(weighted_y) 
 
     output_dict['num_channels_nonzero_charge_with_noise'] = \
                     np.array(num_channels_nonzero_charge_with_noise)

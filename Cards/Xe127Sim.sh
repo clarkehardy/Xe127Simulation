@@ -1,5 +1,5 @@
 python RunDetSim_new.py \
---evtmax 100 \
+--evtmax 1000 \
 --seed 2 \
 --run ./Macros/NEXO_Xe127_uniform.mac \
 --digioutput ./g4andcharge_50evts_xe127_seed2_10msEL.root \
