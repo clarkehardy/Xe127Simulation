@@ -1,0 +1,13 @@
+python RunDetSim_new.py \
+--evtmax 1000 \
+--seed 2 \
+--run ./Macros/NEXO_Xe127_uniform.mac \
+--digioutput ./g4andcharge_50evts_xe127_seed2_10msEL.root \
+--padsize 6. \
+--wpFile /usr/gapps/nexo/nexo-offline/data/singleStripWP6mm.root \
+--tilemap /usr/gapps/nexo/nexo-offline/data/tilesMap_6mm.txt \
+--localmap /usr/gapps/nexo/nexo-offline/data/localChannelsMap_6mm.txt \
+--noiselib /usr/gapps/nexo/nexo-offline/data/noise_lib_100e.root \
+--skipEThreshold 0. \
+--sampling 0.5 \
+--eleclife 10000.
