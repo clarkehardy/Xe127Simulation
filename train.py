@@ -15,7 +15,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-chroma',action='store_true',default=False)
 parser.add_argument('-read_again',action='store_true',default=False)
 args = parser.parse_args()
-print(args)
 chroma = args.chroma
 read_again = args.read_again
 
@@ -72,8 +71,36 @@ else:
     origin = np.array(LMap.Data['Origin'])
     x,y,z = [origin[:,i] for i in range(3)]
 
+    # take a random subset to use for fast plotting
+    rand = np.random.randint(0,len(x),100000)
+    x_sub = x[rand]
+    y_sub = y[rand]
+    z_sub = z[rand]
+    eff_sub = efficiency[rand]
+
+    # volume between cathode and anode within field rings. Defined from preCDR Figure 4.1
+    #z_top = max(z)-19.
+    #z_bottom = z_top-1183.
+    #r_ring = 566.65
+    z_top = max(z)
+    z_bottom = min(z)
+    r_ring = max(np.sqrt(x**2+y**2))
+    
+    # plot a subset of the calibration data
+    plt.figure()
+    ax = plt.subplot()
+    ax.scatter(np.sqrt(x_sub**2+y_sub**2),z_sub,c=eff_sub,s=0.1)
+    ax.axhline(z_top)
+    ax.axhline(z_top+20,color='red')
+    ax.axhline(z_bottom)
+    ax.axhline(z_bottom-20,color='red')
+    ax.axvline(r_ring)
+    ax.axvline(r_ring+20,color='red')
+    ax.set_aspect('equal')
+    plt.show()
+    
     # create cylindrical TPC from data
-    tpc = LightMap.TPC(np.sqrt(x**2+y**2).max(),z.min(),z.max())
+    tpc = LightMap.TPC(r_ring,z_bottom,z_top)
 
     # data to train neural net on
     train = x,y,z,efficiency
@@ -86,14 +113,20 @@ with open('{}/lm-analysis/tpc.pkl'.format(home_dir),'wb') as handle:
     pickle.dump(tpc, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # neural network LightMap fitting
-layers = [512, 256, 128, 64, 32]
-lm_nn = LightMap.total.LightMapNN(tpc, epochs=1, batch_size=32768, hidden_layers=layers)
+layers = [1024, 512, 256, 128, 64, 32]
+lm_nn = LightMap.total.LightMapNN(tpc, epochs=10, batch_size=1024, hidden_layers=layers)
 
 # ensemble method seems to work best here -> take mean of 3 NN's
-for i in range(3):
+for i in range(1):
     lm_nn.fit(*train)
 print(lm_nn)
 
+'''
+# use a histogram to get precise lightmap from high statistics data
+lm_hist = LightMap.LightMapHistXYZ(tpc,nx=500)
+lm_hist.fit(*train)
+'''
+
 # saving model
-model_dir = '{}/lm-analysis'.format(home_dir)
+model_dir = '{}/lm-analysis/full-tpc'.format(home_dir)
 LightMap.save_model(model_dir, lm_nn.kind, lm_nn)

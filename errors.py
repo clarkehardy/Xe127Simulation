@@ -20,7 +20,7 @@ from scipy.ndimage.filters import gaussian_filter
 read_again = False
 
 # choose how to name plots
-plot_name = 'alpha_slide'
+plot_name = 'for_Brian'
 
 # choose whether to show error plot or efficiency plot
 error_plot = True
@@ -28,7 +28,7 @@ error_plot = True
 # save figures here
 home_dir = os.getenv('WORKING_DIR')
 data_dir = os.getenv('DATA_DIR')
-path = '{}/outputs'.format(data_dir)
+path = '{}/outputs/'.format(data_dir)
 
 # set plotting style
 plt.rc('figure', dpi=200, figsize=(4,3), facecolor='w')
@@ -115,8 +115,8 @@ else:
 # ***********************************************************************************************************
 
 # plot RMS error vs dataset size for various options
-colls = ['final_2p_0','final_2p_20','final_1p_0','final_0']
-descrips = ['Xe-127 no cut, both peaks','Xe-127 20mm cut, both peaks','Xe-127 no cut, one peak','Rn-222 no cut']
+colls = ['final_1p_0','final_0']
+descrips = ['Xe-127','Rn-222']
 series_list = []
 [series_list.append(data[[(series in name) for name in data['name']]]) for series in colls]
 plt.figure(figsize=(5,4))
@@ -133,8 +133,11 @@ for i in range(len(series_list)):
           & (z_centers<tpc.zmax-list(series_list[i].cut_dist)[0])
     mask = np.transpose(np.tile(r_mask,(bins,1))) & np.tile(z_mask,(bins,1))
     rms = [np.sum((100*(element[mask]-h_true[mask])/h_true[mask])**2)/bins**2 for element in series_list[i].av_hist.values]
-    plt.loglog(series_list[i]['size'],rms,'.-',label=descrips[i])
+    #plt.loglog(series_list[i]['size'],rms,'.-',label=descrips[i])
+plt.loglog([1e6,1e5,1e4,1e3],[0.01374239649879044,0.02197913281106599,0.08186015727434778,14.172411486552743],'.-',label=descrips[1])
+plt.loglog([1e6,1e5,1e4,1e3],[1.1223136900849953,1.176265522540668,7.173270184392585,79.61007871215548],'.-',label=descrips[0])
 plt.legend(loc='upper right')
+plt.show()
 plt.savefig(path+'rms_'+plot_name+'.png',bbox_inches='tight')
 
 # plot comparison of different datasets

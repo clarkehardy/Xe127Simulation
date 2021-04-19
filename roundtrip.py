@@ -8,6 +8,7 @@ import os
 import pickle
 import copy
 import argparse
+import time
 from scipy.optimize import curve_fit
 from scipy.stats import binned_statistic_2d
 
@@ -19,6 +20,9 @@ from scipy.stats import binned_statistic_2d
 home_dir = os.getenv('WORKING_DIR')
 data_dir = os.getenv('DATA_DIR')
 path = '{}/outputs/'.format(data_dir)
+
+# temporary way to get a subset of 100 events
+smallset = False
 
 '''
 Arguments:
@@ -99,11 +103,11 @@ def gaus(x,A,mu,sigma):
 # cut to select high energy peak
 cl_slope = -0.032
 def peak_sep(x):
-    return cl_slope*x+850
+    return cl_slope*x+940
 
 def cl_cut(x,y):
     if alphas==False:
-        return (y>cl_slope*x+380) & (y<-x*cl_slope+350) & (y>-x*cl_slope-330)
+        return (y>cl_slope*x+380) & (y<-x*cl_slope+400) & (y>-x*cl_slope-290)
     else:
         return y>25.*x-4e5
     
@@ -115,7 +119,7 @@ def cl_cut(x,y):
 plt.rc('figure', dpi=200, figsize=(4,3), facecolor='w')
 plt.rc('savefig', dpi=200, facecolor='w')
 plt.rc('lines', linewidth=1.5)
-pkw = dict(cmap='Greys_r',vmin=0.14, vmax=.34)
+pkw = dict(cmap='viridis',vmin=0., vmax=.5)
 
 # function to plot LightMaps
 def plot_lm_rz(ax, lm, theta=0, vectorize=False, cbar=True):
@@ -178,8 +182,14 @@ with open('{}/lm-analysis/tpc.pkl'.format(home_dir), 'rb') as handle:
     tpc = pickle.load(handle)
 print(tpc)
 
+# redefine TPC as reduced volume within field rings and between cathode and anode
+# dimensions form preCDR
+tpc.r = 566.65
+tpc.zmax = tpc.zmax-19.
+tpc.zmin = tpc.zmax-1183.
+
 # load model
-model_dir = '{}/lm-analysis'.format(home_dir)
+model_dir = '{}/lm-analysis/full-tpc'.format(home_dir)
 lm_nn = LightMap.load_model(model_dir, 'LightMapNN')
 print('\n', lm_nn, '\n')
 
@@ -192,7 +202,8 @@ plt.savefig(path+'original.png',bbox_inches='tight')
 # *********************************************************************************************************
 # LOOP THROUGH ALL DATASETS
 # *********************************************************************************************************
-lim = [1e3,1e4]
+
+lim = [1e2,1e4] # normally [1e3,1e4]. Changed for testing
 for i in range(len(name)):
 
     # *****************************************************************************************************
@@ -201,18 +212,58 @@ for i in range(len(name)):
 
     # import and read simulation files
     filenames = sets[i]
-    data = LightMap.read_files(filenames,branches=['fInitNOP','fNTE','fTotalEventEnergy'])
-    if alphas==True and (i<2 and testing==False):
+    data = LightMap.read_files(filenames,branches=['fInitNOP','fNTE','fTotalEventEnergy','fNESTLineageX','fNESTLineageY','fNESTLineageZ','fNESTLineageNTE','fNESTLineageNOP'])
+    if (alphas==True and (i<2 and testing==False)) or smallset==True:
         data = data[:int(lim[i])]
-    data['z'] = data.z.values + (tpc.zmin - data.z.min())
+    minZ = data.z.min()
+    data['z'] = data.z.values + (tpc.zmin - minZ)
+    print(data.z.min())
+    print(data.z.max())
+    print(max(np.sqrt(data.x.values**2+data.y.values**2)))
+    data['fNESTLineageZ'] = data['fNESTLineageZ'] + (tpc.zmin - minZ)
     print(data.head())
 
+    # detected thermal electrons is sum of thermal electrons produced in lineages within field cage
+    start_time = time.time()
+    fNTEDetected = []
+    xWeighted = []
+    yWeighted = []
+    zWeighted = []
+    xOP = []
+    yOP = []
+    zOP = []
+    for index, evt in data.iterrows():
+        index_array = (evt['fNESTLineageX']**2+evt['fNESTLineageY']**2 < tpc.r**2) & ((evt['fNESTLineageZ'] > tpc.zmin) & (evt['fNESTLineageZ'] < tpc.zmax))
+        fNTEDetected.append(np.sum(evt['fNESTLineageNTE'][index_array]))
+        xWeighted.append(np.sum(evt['fNESTLineageNTE'][index_array]*evt['fNESTLineageX'][index_array])/np.sum(evt['fNESTLineageNTE'][index_array]))
+        yWeighted.append(np.sum(evt['fNESTLineageNTE'][index_array]*evt['fNESTLineageY'][index_array])/np.sum(evt['fNESTLineageNTE'][index_array]))
+        zWeighted.append(np.sum(evt['fNESTLineageNTE'][index_array]*evt['fNESTLineageZ'][index_array])/np.sum(evt['fNESTLineageNTE'][index_array]))
+        xOP.append(np.sum(evt['fNESTLineageNOP']*evt['fNESTLineageX'])/np.sum(evt['fNESTLineageNOP']))
+        yOP.append(np.sum(evt['fNESTLineageNOP']*evt['fNESTLineageY'])/np.sum(evt['fNESTLineageNOP']))
+        zOP.append(np.sum(evt['fNESTLineageNOP']*evt['fNESTLineageZ'])/np.sum(evt['fNESTLineageNOP']))
+        
+    elapsed_time = time.time()-start_time
+    print('Time elapsed: '+str(elapsed_time))
+
+    # create new columns in the dataframe for corrected positions and NTE
+    data['xWeighted'] = xWeighted
+    data['yWeighted'] = yWeighted
+    data['zWeighted'] = zWeighted
+    data['xOP'] = xOP
+    data['yOP'] = yOP
+    data['zOP'] = zOP
+    data['rOP'] = np.sqrt(np.array(xOP)**2+np.array(yOP)**2)
+    data['fNTEDetected'] = fNTEDetected
+    
+    # cut events with no charge signal
     data_size = len(data.index)
+    cuts = ~(data['fNTEDetected']==0)
+    after_elec = len(data[cuts].index)
+    
     # cut events with no photons produced
-    #data.drop(data[data['fInitNOP']==0].index, inplace=True)
     cuts = ~(data['fInitNOP']==0)
     after_photon = len(data[cuts].index)
-
+    
     # apply fiducial cut
     fidcut = True
     if(fidcut==True):
@@ -221,53 +272,56 @@ for i in range(len(name)):
     else:
         zlim = [tpc.zmin,tpc.zmax]
         rlim = [0,tpc.r]
-    inside_z = abs(data.z.values-(zlim[1]-zlim[0])/2.-zlim[0])>(zlim[1]-zlim[0])/2.
-    inside_r = abs(data.r.values-(rlim[1]-rlim[0])/2.-rlim[0])>(rlim[1]-rlim[0])/2.
+    inside_z = abs(data.zWeighted.values-(zlim[1]-zlim[0])/2.-zlim[0])>(zlim[1]-zlim[0])/2.
+    inside_r = abs(data.rOP.values-(rlim[1]-rlim[0])/2.-rlim[0])>(rlim[1]-rlim[0])/2.
     cuts = cuts & (~inside_z & ~inside_r)
     after_fiducial = len(data[cuts].index)
 
     # sample based on number of photons generated
     qe = 0.1
-    data['ndet'] = lm_nn.sample_n_collected(data.x.values, data.y.values, data.z.values, data.fInitNOP.values, qe=qe, ap=0.2, seed=1)
-
+    data['ndet'] = lm_nn.sample_n_collected(data.xOP.values, data.yOP.values, data.zOP.values, data.fInitNOP.values, qe=qe, ap=0.2, seed=1)
+    print('\nDetected photons sampled.')
+    print(np.sum(data['ndet']==0))
+    
     # smear electron signal
-    nelec = np.array(data['fNTE'])
+    nelec = np.array(data['fNTEDetected'])
     charge_bins = np.linspace(0,28000,201)
     charge_fluc = 2200
-    data['fNTE'] = data.fNTE.values+np.random.normal(scale=charge_fluc,size=len(data['fNTE']))
-    data.loc[data.fNTE.values<0,'fNTE'] = 0
+    data['fNTEDetected'] = data.fNTEDetected.values+np.random.normal(scale=charge_fluc,size=len(data['fNTEDetected']))
+    data.loc[data.fNTEDetected.values<0,'fNTEDetected'] = 0
 
     # separate low and high energy peaks
     data['peak'] = np.ones(len(data.ndet.values))
     if alphas==False:
-        peak_cond = peak_sep(data.fNTE.values) < data.ndet.values
+        peak_cond = peak_sep(data.fNTEDetected.values) < data.ndet.values
         data.loc[peak_cond,'peak'] = 2
 
     # cut out data that is not in one of the peaks
-    cut_cond = cl_cut(data.fNTE.values,data.ndet.values)
+    cut_cond = cl_cut(data.fNTEDetected.values,data.ndet.values)
     cuts = cuts & cut_cond
     after_chargelight = len(data[cuts].index)
 
     # print results of cuts with efficiency
-    print('\nEvents before photon cut: '+str(data_size))
+    print('\nEvents before thermal electron cut: '+str(data_size))
+    print('Events after thermal electron cut: '+str(after_elec))
+    print('Thermal electron cut efficiency: {:.1f} %'.format(after_elec*100./data_size))
     print('Events after photon cut: '+str(after_photon))
-    print('Photon cut efficiency: {:.1f} %'.format(after_photon*100./data_size))
+    print('Photon cut efficiency: {:.1f} %'.format(after_photon*100./after_elec))
     print('Events after fiducial cut: '+str(after_fiducial))
     print('Fiducial cut efficiency: {:.1f} %'.format(after_fiducial*100./after_photon))
     print('Events after charge/light cut: '+str(after_chargelight))
     print('Charge/light cut efficiency: {:.1f} %\n'.format(after_chargelight*100./after_fiducial))
 
     # fit Gaussian to high energy peak
-    fNTE_counts,fNTE_bins = np.histogram(data.fNTE.values[data['peak']==2],bins=charge_bins)
+    fNTE_counts,fNTE_bins = np.histogram(data.fNTEDetected.values[data['peak']==2],bins=charge_bins)
     fNTE_bins = (fNTE_bins[1:]+fNTE_bins[:-1])/2.
     popt_gaus,pcov_gaus = curve_fit(gaus,fNTE_bins,fNTE_counts,p0=[max(fNTE_counts),18000,2000])
     print('Width of smeared charge signal is '+str(np.around(100*popt_gaus[2]/popt_gaus[1],decimals=1))+' %\n')
 
     # correct for efficiency with true Lightmap
-    r_vals = np.sqrt(data.x.values**2 + data.y.values**2)
-    theta_vals = np.arctan(data.y.values/data.x.values)
-    ndet_effic = lm_nn(r_vals,theta_vals,data.z.values,cyl=True)
-    ndet_corr = np.array(data.ndet.values/(ndet_effic*qe))
+    r_vals = np.array(data.rOP.values)
+    theta_vals = np.arctan(data.yOP.values/data.xOP.values)
+    ndet_effic = lm_nn(r_vals,theta_vals,data.zOP.values,cyl=True)
 
     # compute mean number of photons for each peak
     if alphas==False:
@@ -292,7 +346,7 @@ for i in range(len(name)):
     # plot spatial distribution of events
     from matplotlib.image import NonUniformImage
     fig,ax = plt.subplots(figsize=(3,5))
-    hist,r_edges,z_edges = np.histogram2d(data.r.values,data.z.values,bins=50)
+    hist,r_edges,z_edges = np.histogram2d(data.rOP.values,data.zOP.values,bins=50)
     r_bins = (r_edges[:-1]+r_edges[1:])/2.
     z_bins = (z_edges[:-1]+z_edges[1:])/2.
     R,Z = np.meshgrid(r_bins,z_bins)
@@ -309,7 +363,7 @@ for i in range(len(name)):
 
     # plot raw scatter colored by efficiency
     plt.figure(figsize=(3,5))
-    plt.scatter(data.r.values[cuts],data.z.values[cuts],c=data.eff.values[cuts],s=0.1,cmap='spring')
+    plt.scatter(data.rOP.values[cuts],data.zOP.values[cuts],c=data.eff.values[cuts],s=0.1,cmap='spring')
     plt.xlabel(r'$r$ (mm)')
     plt.ylabel(r'$z$ (mm)')
     plt.title('Calibration Data')
@@ -323,7 +377,7 @@ for i in range(len(name)):
 
     # plot spatial distribution x and y
     plt.figure(figsize=(3,3))
-    hist,x_edges,y_edges = np.histogram2d(data.x.values,data.y.values,bins=200)
+    hist,x_edges,y_edges = np.histogram2d(data.xOP.values,data.yOP.values,bins=200)
     x_bins = (x_edges[:-1]+x_edges[1:])/2.
     y_bins = (y_edges[:-1]+y_edges[1:])/2.
     X,Y = np.meshgrid(x_bins,y_bins)
@@ -366,7 +420,7 @@ for i in range(len(name)):
     xvals = np.linspace(0,26500,10)
     yvals = peak_sep(xvals)
     plt.figure()
-    plt.hist2d(data.fNTE.values[cuts],data.ndet.values[cuts],200,norm=mpl.colors.LogNorm())
+    plt.hist2d(data.fNTEDetected.values[cuts],data.ndet.values[cuts],200,norm=mpl.colors.LogNorm())
     plt.xlabel('Detected electrons')
     plt.ylabel('Detected photons')
     if alphas==False:
@@ -380,7 +434,7 @@ for i in range(len(name)):
 
     # plot a histogram of the charge signal
     plt.figure()
-    plt.hist([nelec,data.fNTE.values],bins=charge_bins,color=['black','blue'],label=['MC Truth charge','Observed charge'],histtype=u'step')
+    plt.hist([nelec,data.fNTEDetected.values],bins=charge_bins,color=['black','blue'],label=['MC Truth charge','Observed charge'],histtype=u'step')
     plt.plot(np.linspace(12000,25000,100),gaus(np.linspace(12000,25000,100),*popt_gaus),color='pink')
     plt.xlabel('Charge Signal (Number of Electrons)')
     plt.ylabel('Counts')
@@ -397,22 +451,26 @@ for i in range(len(name)):
     plt.savefig(path+'light_'+name[i]+'.png',bbox_inches='tight')
 
     # plot a histogram of the light signal
+    '''
     plt.figure()
-    plt.hist([data.fInitNOP.values/np.mean(data.fInitNOP.values),data.ndet.values/np.mean(data.ndet.values)],bins=200,color=['darkorange','red'],\
-             histtype=u'step',density=False,label=['MC Truth','Detected'])
+    plt.hist([data.fInitNOP.values[data['peak']==1]/np.mean(data.fInitNOP.values[data['peak']==1]),data.ndet.values[data['peak']==1]/np.mean(data.ndet.values[data['peak']==1])],\
+             bins=200,color=['darkorange','red'],histtype=u'step',density=False,label=['MC Truth','Detected'])
     plt.xlabel('Relative Number of Photons')
     plt.ylabel('Counts')
     plt.title('Detected Photon Sampling')
     plt.legend(loc='best')
     plt.savefig(path+'lighthist_'+name[i]+'.png',bbox_inches='tight')
-
+    '''
+    
     # 2d histogram of reconstructed light produced
+    '''
     plt.figure()
     plt.hist2d(data.fInitNOP.values,ndet_corr,bins=200,norm=mpl.colors.LogNorm())
     plt.xlabel('MC Truth Scintillation (Number of Photons)')
     plt.ylabel('Reconstructed Scintillation (Number of Photons)')
     plt.colorbar()
     plt.savefig(path+'light_recon_'+name[i]+'.png',bbox_inches='tight')
+    '''
 
     # plot efficiency curve for both peaks
     plt.figure()
@@ -424,6 +482,7 @@ for i in range(len(name)):
         plt.legend(loc='upper right')
     plt.savefig(path+'eff_compare_'+name[i]+'.png',bbox_inches='tight')
 
+    plt.show()
     plt.close('all')
     if(rt_on == False):
         continue
@@ -434,15 +493,18 @@ for i in range(len(name)):
 
     # define new training set
     if both_peaks == True:
-        train_again = data.x.values[cuts], data.y.values[cuts], data.z.values[cuts], data.eff.values[cuts]
+        #train_again = data.x.values[cuts], data.y.values[cuts], data.z.values[cuts], data.eff.values[cuts]
+        train_again = data.xOP.values[cuts], data.yOP.values[cuts], data.zOP.values[cuts], data.eff.values[cuts]
     else:
-        train_again = data.x.values[(data['peak']==2) & cuts],data.y.values[(data['peak']==2) & cuts],\
-                      data.z.values[(data['peak']==2) & cuts],data.eff.values[(data['peak']==2) & cuts]
+        #train_again = data.x.values[(data['peak']==2) & cuts],data.y.values[(data['peak']==2) & cuts],\
+        #              data.z.values[(data['peak']==2) & cuts],data.eff.values[(data['peak']==2) & cuts]
+        train_again = data.xOP.values[(data['peak']==2) & cuts],data.yOP.values[(data['peak']==2) & cuts],\
+                      data.zOP.values[(data['peak']==2) & cuts],data.eff.values[(data['peak']==2) & cuts]
     layers = [512, 256, 128, 64, 32]
     lm_nn_again = LightMap.total.LightMapNN(tpc, epochs=10, batch_size=64, hidden_layers=layers)
 
     # train new set
-    for j in range(5):
+    for j in range(3):
         lm_nn_again.fit(*train_again)
     print(lm_nn_again)
 
@@ -460,7 +522,7 @@ for i in range(len(name)):
     h_nn = hl.hist_from_eval(f, vectorize=False, bins=200, range=rang)
     f = lambda r, z: lm_nn_again(r, np.repeat(0, r.size), z, cyl=True)
     h_nn_again = hl.hist_from_eval(f, vectorize=False, bins=200, range=rang)
-    d = hl.plot2d(ax, 100*(h_nn_again - h_nn) / h_nn, cbar=True, cmap='RdBu_r')
+    d = hl.plot2d(ax, 100*(h_nn_again - h_nn) / h_nn, cbar=True, cmap='RdBu_r',vmin=-10,vmax=10)
     d['colorbar'].set_label(r'Percent Difference (Retrained vs Original NN)')
     ax.set_xlabel(r'$r$ (mm)')
     ax.set_ylabel(r'$z$ (mm)')
@@ -480,5 +542,6 @@ for i in range(len(name)):
         ax.set_yticks([])
         ax.set_ylabel('')
     plt.savefig(path+'compare_'+name[i]+'.png',bbox_inches='tight')
+    plt.show()
     plt.close('all')
     del lm_nn_again
