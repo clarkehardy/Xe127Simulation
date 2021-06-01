@@ -1,14 +1,35 @@
 import numpy as np
 import pandas as pd
+import pickle
+import LightMap
 
 #####################################################################################
 # COMPUTE OBSERVED LIGHT
 #####################################################################################
 def ComputeObservedLight( dfsim ):
-    detected_photons = np.random.binomial(dfsim['fInitNOP'],0.03)
-    detected_photoelectrons = detected_photons + \
-                                np.random.poisson(detected_photons*0.2)
-    return detected_photoelectrons
+
+    # load lightmap used to sample observed light
+    lm_nn = LightMap.load_model('../full-tpc', 'LightMapNN')
+
+    # load TPC used for training
+    with open('../tpc.pkl', 'rb') as handle:
+        tpc = pickle.load(handle)
+
+    # redefine TPC as reduced volume within field rings and between cathode and anode
+    # dimensions form preCDR
+    tpc.r = 566.65
+    tpc.zmax = tpc.zmax-19.
+    tpc.zmin = tpc.zmax-1183.
+
+    output_dict = dict()
+    detected_photoelectrons = lm_nn.sample_n_collected(dfsim['fGenX'], dfsim['fGenY'], \
+                                                       dfsim['fGenZ'] + tpc.zmin - min(dfsim['fGenZ']), \
+                                                       dfsim['fInitNOP'], qe=0.1, ap=0.2, seed=1)
+
+    output_dict['Observed Light'] = np.array(detected_photoelectrons)
+    output_dict['fInitNOP'] = np.array(dfsim['fInitNOP'])
+    
+    return output_dict
 
 
 #####################################################################################
@@ -144,5 +165,6 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
                     np.array(num_channels_nonzero_charge_with_noise)
     output_dict['num_channels_nonzero_charge_excluding_noise'] = \
                     np.array(num_channels_nonzero_charge_excluding_noise)
+    output_dict['fNTE'] = np.array(dfelec['fNTE'])
     
     return output_dict

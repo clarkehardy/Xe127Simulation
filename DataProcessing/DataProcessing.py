@@ -49,12 +49,12 @@ dfsim = sim.arrays(columns_to_get,outputtype=pd.DataFrame, entrystart=0, entryst
 
 
 elec_columns_to_get = [ 'fElecChannels.fChannelCharge',\
-                      'fElecChannels.fChannelLocalId',\
-                      'fElecChannels.fChannelNoiseTag',\
-                      'fElecChannels.fChannelTime',\
-                      'fElecChannels.fXPosition',\
-                      'fElecChannels.fYPosition',\
-                      ]
+                        'fElecChannels.fChannelLocalId',\
+                        'fElecChannels.fChannelNoiseTag',\
+                        'fElecChannels.fChannelTime',\
+                        'fElecChannels.fXPosition',\
+                        'fElecChannels.fYPosition',\
+                        'fNTE',]
 
 #columns_to_get = [x for x in elec.allkeys() if elec[x].interpretation is not None and x != b"fBits"]
 dfelec = elec.arrays( elec_columns_to_get, outputtype=pd.DataFrame, entrystart=0, entrystop=num_events )
@@ -69,13 +69,12 @@ observed_light = ComputeObservedLight( dfsim )
 observed_charge = ComputeObservedCharge( dfelec )
 
 observables_dict = {}
-for key, value in observed_charge.items():
-    observables_dict[key] = value
+for key, value in observed_light.items():
+   observables_dict[key] = value
 
-observables_dict['Observed Light'] = observed_light
+for key, value in observed_charge.items():
+   observables_dict[key] = value
 
 output_df = pd.DataFrame(observables_dict)
 
 output_df.to_pickle(output_dir + filename + '_REDUCED.pkl',compression='gzip')
-
-
