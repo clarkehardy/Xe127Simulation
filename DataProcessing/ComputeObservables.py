@@ -38,6 +38,8 @@ def ComputeObservedLight( dfsim ):
 def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
     
     output_dict = dict()
+
+    single_channel_charge_noise = 600. # electrons
     
     num_channels_nonzero_charge_with_noise = []
     num_channels_nonzero_charge_excluding_noise = []
@@ -46,6 +48,10 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
     num_channels_collection = []
     num_collection_below_threshold = []
     num_channels_induction = []
+    evt_charge_two_strip_cut = []
+    evt_charge_five_strip_cut = []
+    evt_charge_six_strip_cut = []
+    evt_charge_eight_strip_cut = []
     evt_charge_excluding_noise = []
     evt_charge_including_noise = []
     evt_charge_above_threshold = []
@@ -70,7 +76,7 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
         y_positions = []
         x_weights = []
         y_weights = []
-        charge_weights = []
+        channel_charges = []
         is_x_channel = []
         
         nch = len(row['fElecChannels.fChannelCharge'])
@@ -103,51 +109,83 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
                 y_positions.append( row['fElecChannels.fYPosition'][i] + yoffset )
                 x_weights.append(1./strip_width)
                 y_weights.append(1./strip_height)
-                charge_weights.append( row['fElecChannels.fChannelCharge'][i] )
+                channel_charges.append( row['fElecChannels.fChannelCharge'][i] )
                 if row['fElecChannels.fChannelLocalId'][i] > 15:
-                    is_x_channel.append(True)
-                else: 
                     is_x_channel.append(False)
+                else: 
+                    is_x_channel.append(True)
 
         is_noise_channel = np.array(is_noise_channel) 
+        is_x_channel = np.array(is_x_channel)
         drift_times = np.array(drift_times)
         x_positions = np.array(x_positions)
         y_positions = np.array(y_positions)
-        charge_weights = np.array(charge_weights)
+        channel_charges = np.array(channel_charges)
         x_weights = np.array(x_weights)
         y_weights = np.array(y_weights)
         
-        this_weighted_x = np.sum(x_positions*(charge_weights*x_weights))/np.sum(charge_weights*x_weights)
-        this_weighted_y = np.sum(y_positions*(charge_weights*y_weights))/np.sum(charge_weights*y_weights)
+        this_weighted_x = np.sum(x_positions*(channel_charges*x_weights))/np.sum(channel_charges*x_weights)
+        this_weighted_y = np.sum(y_positions*(channel_charges*y_weights))/np.sum(channel_charges*y_weights)
         
         weighted_radius.append( np.sqrt(this_weighted_x**2 + this_weighted_y**2) )
         weighted_drift.append(\
-                             np.sum(drift_times*charge_weights)/np.sum(charge_weights)
+                             np.sum(drift_times*channel_charges)/np.sum(channel_charges)
                              )
         weighted_x.append(this_weighted_x)
         weighted_y.append(this_weighted_y)        
+
+        xmask_2strips = (is_x_channel)&(x_positions > this_weighted_x-13.)&(x_positions < this_weighted_x+13.)
+        ymask_2strips = (np.invert(is_x_channel))&(y_positions > this_weighted_y-13.)&(y_positions < this_weighted_y+13.)
+
+        xmask_5strips = (is_x_channel)&(x_positions > this_weighted_x-31.)&(x_positions < this_weighted_x+31.)
+        ymask_5strips = (np.invert(is_x_channel))&(y_positions > this_weighted_y-31.)&(y_positions < this_weighted_y+31.)
+
+        xmask_6strips = (is_x_channel)&(x_positions > this_weighted_x-37.)&(x_positions < this_weighted_x+37.)
+        ymask_6strips = (np.invert(is_x_channel))&(y_positions > this_weighted_y-37.)&(y_positions < this_weighted_y+37.)
         
+        xmask_8strips = (is_x_channel)&(x_positions > this_weighted_x-49.)&(x_positions < this_weighted_x+49.)
+        ymask_8strips = (np.invert(is_x_channel))&(y_positions > this_weighted_y-49.)&(y_positions < this_weighted_y+49.)
+
         nonzero_mask = np.invert(row['fElecChannels.fChannelCharge']==0) # true if collection
+        not_noise = np.invert(is_noise_channel)
 
-
-        fluctuated_charge = np.random.normal(0.,600.,size=nch)\
+        fluctuated_charge = np.random.normal(0.,single_channel_charge_noise,size=nch)\
                             + row['fElecChannels.fChannelCharge']
         threshold_mask = fluctuated_charge>channel_threshold
 
         num_channels_nonzero_charge_with_noise.append( np.sum(nonzero_mask) )
         num_channels_nonzero_charge_excluding_noise.append( \
-                                                np.sum( nonzero_mask & np.invert(is_noise_channel) )\
+                                                np.sum( nonzero_mask & not_noise )\
                                                           )
+        
+
+        evt_charge_two_strip_cut.append( np.sum(row['fElecChannels.fChannelCharge'][not_noise][xmask_2strips]) + \
+                                         np.sum(row['fElecChannels.fChannelCharge'][not_noise][ymask_2strips]) + \
+                                         np.random.normal(0.,single_channel_charge_noise)*np.sqrt(8) )
+        evt_charge_five_strip_cut.append( np.sum(row['fElecChannels.fChannelCharge'][not_noise][xmask_5strips]) + \
+                                         np.sum(row['fElecChannels.fChannelCharge'][not_noise][ymask_5strips]) + \
+                                         np.random.normal(0.,single_channel_charge_noise)*np.sqrt(20) )
+        evt_charge_six_strip_cut.append( np.sum(row['fElecChannels.fChannelCharge'][not_noise][xmask_6strips]) + \
+                                         np.sum(row['fElecChannels.fChannelCharge'][not_noise][ymask_6strips]) + \
+                                         np.random.normal(0.,single_channel_charge_noise)*np.sqrt(24) )
+        evt_charge_eight_strip_cut.append( np.sum(row['fElecChannels.fChannelCharge'][not_noise][xmask_8strips]) + \
+                                           np.sum(row['fElecChannels.fChannelCharge'][not_noise][ymask_8strips]) + \
+                                           np.random.normal(0.,single_channel_charge_noise)*np.sqrt(32) )
+
         evt_charge_including_noise.append(   np.sum(row['fElecChannels.fChannelCharge'][nonzero_mask]) )
-        evt_charge_excluding_noise.append(   np.sum(row['fElecChannels.fChannelCharge'][nonzero_mask & np.invert(is_noise_channel)]) )
-        evt_charge_above_threshold.append(   np.sum( fluctuated_charge[ threshold_mask & np.invert(is_noise_channel) ] ) )
-        num_channels_above_threshold.append( np.sum( threshold_mask & np.invert(is_noise_channel) ))
-        num_channels_excluding_noise.append( np.sum( np.invert(is_noise_channel) ) )
-        num_channels_collection.append(      np.sum( np.invert(is_noise_channel) & nonzero_mask ) )
-        num_collection_below_threshold.append( np.sum( np.invert(is_noise_channel) & nonzero_mask & np.invert(threshold_mask) ) )
-        num_channels_induction.append(       np.sum( np.invert(is_noise_channel) & np.invert(nonzero_mask) ) )                          
+        evt_charge_excluding_noise.append(   np.sum(row['fElecChannels.fChannelCharge'][nonzero_mask & not_noise]) )
+        evt_charge_above_threshold.append(   np.sum( fluctuated_charge[ threshold_mask & not_noise ] ) )
+        num_channels_above_threshold.append( np.sum( threshold_mask & not_noise ))
+        num_channels_excluding_noise.append( np.sum( not_noise ) )
+        num_channels_collection.append(      np.sum( not_noise & nonzero_mask ) )
+        num_collection_below_threshold.append( np.sum( not_noise & nonzero_mask & np.invert(threshold_mask) ) )
+        num_channels_induction.append(       np.sum( not_noise & np.invert(nonzero_mask) ) )                          
 
     output_dict['num_channels_in_evt'] = np.array(num_channels_in_evt)
+    output_dict['evt_charge_two_strip_cut'] = np.array(evt_charge_two_strip_cut)
+    output_dict['evt_charge_five_strip_cut'] = np.array(evt_charge_five_strip_cut)
+    output_dict['evt_charge_six_strip_cut'] = np.array(evt_charge_six_strip_cut)
+    output_dict['evt_charge_eight_strip_cut'] = np.array(evt_charge_eight_strip_cut)
     output_dict['evt_charge_including_noise'] = np.array(evt_charge_including_noise)
     output_dict['evt_charge_excluding_noise'] = np.array(evt_charge_excluding_noise)
     output_dict['evt_charge_above_threshold'] = np.array(evt_charge_above_threshold)
