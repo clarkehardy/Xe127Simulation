@@ -26,6 +26,11 @@ def ComputeObservedLight( dfsim ):
                                                        dfsim['fGenZ'] + tpc.zmin - min(dfsim['fGenZ']), \
                                                        dfsim['fInitNOP'], qe=0.1, ap=0.2, seed=1)
 
+    corrected_photoelectrons = detected_photoelectrons / \
+                               lm_nn.do_call(dfsim['fGenX'], dfsim['fGenY'], \
+                                             dfsim['fGenZ'] + tpc.zmin - min(dfsim['fGenZ']))
+
+    output_dict['Corrected Light'] = np.array(corrected_photoelectrons)
     output_dict['Observed Light'] = np.array(detected_photoelectrons)
     output_dict['fInitNOP'] = np.array(dfsim['fInitNOP'])
     
