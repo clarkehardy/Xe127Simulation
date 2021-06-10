@@ -2,7 +2,7 @@ python3 RunDetSim_new.py \
 --evtmax 10000 \
 --seed $1 \
 --run ./Macros/NEXO_Xe127_uniform.mac \
---digioutput $SIM_DIR/g4andcharge_50evts_xe127_seed$1_10msEL.root \
+--digioutput $SIM_DIR/g4andcharge_10kevts_xe127_seed$1_10msEL.root \
 --padsize 6. \
 --wpFile /usr/gapps/nexo/nexo-offline/data/singleStripWP6mm.root \
 --tilemap /usr/gapps/nexo/nexo-offline/data/tilesMap_6mm.txt \
