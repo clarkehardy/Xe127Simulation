@@ -112,12 +112,12 @@ tpc.zmin = -1580.97#tpc.zmax-1183.#3#21#1183.
 
 # load model
 print('\nLoading true lightmap model...\n')
-lm_nn = LightMap.load_model('true-lm', 'LightMapHistRZ')
-print(lm_nn, '\n')
+lm_true = LightMap.load_model('true-lm', 'LightMapHistRZ')
+print(lm_true, '\n')
 
 # plot the original lightmap
 fig,ax = plt.subplots(figsize=(3.5,5))
-d = plot_lm_rz(ax,lm_nn,tpc)
+d = plot_lm_rz(ax,lm_true,tpc)
 ax.set_title('True Lightmap')
 plt.savefig(path+'original.png',bbox_inches='tight')
 
@@ -223,7 +223,7 @@ np.savetxt(path+'effic_'+name+'.txt',np.array(data.eff.values))
 
 if make_plots:
     print('Saving some relevant plots in {:s}\n'.format(path))
-    make_figs(tpc,lm_nn,data,cuts,path,name,rlim,zlim,peak_sep)
+    make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep)
     plt.show()
 
 if not rt_on:
@@ -288,7 +288,7 @@ LightMap.save_model(path+'LightMap_'+name,lm_again.kind,lm_again)
 
 # make results plots and compute fitting metrics
 print('\nPlotting and saving the results...\n')
-mean,var = plot_results(tpc,lm_nn,lm_again,rlim,zlim,path,name)
+mean,var = plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name)
 
 # print fitting results
 print('Fitting results')
