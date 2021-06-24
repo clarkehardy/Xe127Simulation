@@ -58,7 +58,7 @@ rt_on = args.train
 make_plots = args.make_plots
 both_peaks = args.both_peaks
 standoff = args.standoff
-description = args.description
+name = args.description
 events = args.events
 fit_type = args.fit_type
 learning_rate = args.learning_rate
@@ -79,13 +79,15 @@ if not make_plots:
 # **********************************************************************************************************
 
 # cut to select high energy peak
-cl_slope = -0.048
+cl_slope = -0.068
 def peak_sep(x):
-    return cl_slope*x+1240
+    return cl_slope*x+1600
 
 # cut out any other peaks
 def cl_cut(x,y):
-    return (y>cl_slope*x+580) & (y<-x*cl_slope+200) & (y>-x*cl_slope-790)
+    #       bottom limit         right limit       left limit
+    #return (y>cl_slope*x+580) & (y<-x*cl_slope) & (y>-x*cl_slope-790)
+    return y>100
 
 # set plotting style
 plt.rc('figure', dpi=200, figsize=(4,3), facecolor='w')
@@ -104,14 +106,13 @@ with open('tpc.pkl', 'rb') as handle:
 print(tpc)
 
 # redefine TPC as reduced volume within field rings and between cathode and anode
-# dimensions form preCDR
 tpc.r = 566.65
-tpc.zmax = tpc.zmax-19.
-tpc.zmin = tpc.zmax-1183.
+tpc.zmax = -402.97 #tpc.zmax-19.#1199#17#19.
+tpc.zmin = -1580.97#tpc.zmax-1183.#3#21#1183.
 
 # load model
 print('\nLoading true lightmap model...\n')
-lm_nn = LightMap.load_model('full-tpc', 'LightMapNN')
+lm_nn = LightMap.load_model('true-lm', 'LightMapHistRZ')
 print(lm_nn, '\n')
 
 # plot the original lightmap
@@ -126,9 +127,6 @@ plt.savefig(path+'original.png',bbox_inches='tight')
 
 remainder = events % 10000
 num_datasets = int(np.ceil(events/10000))
-
-# set name to identify saved plots and files
-name = description#+'_'+str(int(np.round(events/1000)))+'k'
 data = []
 
 # loop through and collect the specified number of events
@@ -145,7 +143,10 @@ for data_file in input_files[:num_datasets]:
 data = pd.concat(data,ignore_index=True)
 
 # compute z from the drift time and TPC dimensions
-data['z'] = tpc.zmax - (data.weighted_drift.values*1.709)
+# drift velocity from 2021 sensitivity paper
+# TPC center + (TPC length)/2 - TPC top to anode
+# 1022.6 + 1277/2 - 18.87
+data['z'] = -402.97 - data.weighted_drift.values*1.709
 
 # *****************************************************************************************************
 # APPLY CUTS AND DETERMINE QUANTITIES FOR NN TRAINING
@@ -188,7 +189,6 @@ peak_cond = peak_sep(data.evt_charge_including_noise.values) < data['Observed Li
 data.loc[peak_cond,'peak'] = 2
 
 # cut out data that is not in one of the peaks
-#cut_cond = cl_cut(data.fNTEDetected.values,data.ndet.values)
 cut_cond = cl_cut(data.evt_charge_including_noise.values,data['Observed Light'])
 cuts = cuts & cut_cond
 after_chargelight = len(data[cuts].index)
