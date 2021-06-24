@@ -9,26 +9,19 @@ import LightMap
 def ComputeObservedLight( dfsim ):
 
     # load lightmap used to sample observed light
-    lm_nn = LightMap.load_model('../full-tpc', 'LightMapNN')
+    lm_true = LightMap.load_model('../true-lm', 'LightMapHistRZ')
 
     # load TPC used for training
     with open('../tpc.pkl', 'rb') as handle:
         tpc = pickle.load(handle)
 
-    # redefine TPC as reduced volume within field rings and between cathode and anode
-    # dimensions form preCDR
-    tpc.r = 566.65
-    tpc.zmax = tpc.zmax-19.
-    tpc.zmin = tpc.zmax-1183.
-
     output_dict = dict()
-    detected_photoelectrons = lm_nn.sample_n_collected(dfsim['fGenX'], dfsim['fGenY'], \
+    detected_photoelectrons = lm_true.sample_n_collected(dfsim['fGenX'], dfsim['fGenY'], \
                                                        dfsim['fGenZ'] + tpc.zmin - min(dfsim['fGenZ']), \
                                                        dfsim['fInitNOP'], qe=0.1, ap=0.2, seed=1)
 
     corrected_photoelectrons = detected_photoelectrons / \
-                               lm_nn.do_call(dfsim['fGenX'], dfsim['fGenY'], \
-                                             dfsim['fGenZ'] + tpc.zmin - min(dfsim['fGenZ']))
+                               lm_true.do_call(dfsim['fGenX'], dfsim['fGenY'], dfsim['fGenZ'])
 
     output_dict['Corrected Light'] = np.array(corrected_photoelectrons)
     output_dict['Observed Light'] = np.array(detected_photoelectrons)
