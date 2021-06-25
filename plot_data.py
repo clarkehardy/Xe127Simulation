@@ -14,7 +14,7 @@ pkw = dict(cmap='viridis',vmin=0., vmax=.5)
 def plot_lm_rz(ax, lm, tpc, theta=0, vectorize=False, cbar=True):
     f = lambda r, z: lm(r, (theta if vectorize else np.repeat(theta, z.size)), z, cyl=True)
     rang = (0, tpc.r), (tpc.zmin, tpc.zmax)
-    h = hl.hist_from_eval(f, vectorize=vectorize, bins=5000, range=rang)
+    h = hl.hist_from_eval(f, vectorize=vectorize, bins=1000, range=rang)
     d = hl.plot2d(ax, h, cbar=cbar, **pkw)
     if cbar:
         d['colorbar'].set_label(r'Collection Efficiency')
@@ -57,7 +57,7 @@ def proj2d(x,y,xlabel='x',ylabel='y',bins=200,s=0.001,color='blue'):
     ax_histy.set_xticks([])
     return ax_histx,ax_histy,ax_scatter
 
-def make_figs(tpc,lm_nn,data,cuts,path,name,rlim,zlim,peak_sep):
+def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     # plot spatial distribution of events in r and z
     fig,ax = plt.subplots(figsize=(3.5,5))
     hist,r_edges,z_edges = np.histogram2d(data.weighted_radius.values[cuts],data.z.values[cuts],bins=50,range=([rlim,zlim]),density=True)
@@ -109,7 +109,7 @@ def make_figs(tpc,lm_nn,data,cuts,path,name,rlim,zlim,peak_sep):
 
     # plot fiducial cut
     fig,ax = plt.subplots(figsize=(3.5,5))
-    d = plot_lm_rz(ax,lm_nn,tpc)
+    d = plot_lm_rz(ax,lm_true,tpc)
     plt.axvline(x=rlim[0],ymin=(zlim[0]-tpc.zmin)/(tpc.zmax-tpc.zmin),\
                 ymax=(zlim[1]-tpc.zmin)/(tpc.zmax-tpc.zmin),color='red',ls='--',lw=0.5)
     plt.axvline(x=rlim[1],ymin=(zlim[0]-tpc.zmin)/(tpc.zmax-tpc.zmin),\
@@ -181,11 +181,11 @@ def make_figs(tpc,lm_nn,data,cuts,path,name,rlim,zlim,peak_sep):
     plt.tight_layout()
     plt.savefig(path+'eff_compare_'+name+'.png',bbox_inches='tight')
 
-def plot_results(tpc,lm_nn,lm_again,rlim,zlim,path,name):
+def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
     # plot differences between LightMaps
     fig, ax = plt.subplots(1,1,figsize=(4,5))
     rang = (rlim[0],rlim[1]), (zlim[0],zlim[1])
-    f = lambda r, z: lm_nn(r, np.repeat(0, r.size), z, cyl=True)
+    f = lambda r, z: lm_true(r, np.repeat(0, r.size), z, cyl=True)
     h_nn = hl.hist_from_eval(f, vectorize=False, bins=200, range=rang)
     f = lambda r, z: lm_again(r, np.repeat(0, r.size), z, cyl=True)
     h_again = hl.hist_from_eval(f, vectorize=False, bins=200, range=rang)
@@ -200,7 +200,7 @@ def plot_results(tpc,lm_nn,lm_again,rlim,zlim,path,name):
 
     # plot side-by-side of original and retrained LightMap
     fig, axs = plt.subplots(1, 3, figsize=(6,5), gridspec_kw=dict(width_ratios=[1,1,.05]))
-    these_lms = lm_nn, lm_again
+    these_lms = lm_true, lm_again
     titles = 'Original Lightmap', 'Round-trip Lightmap',
     for (ax,lm, title) in zip(axs, these_lms, titles):
         d = plot_lm_rz(ax, lm, tpc, cbar=False)

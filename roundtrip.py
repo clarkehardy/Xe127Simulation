@@ -18,8 +18,8 @@ from plot_data import plot_lm_rz,proj2d,make_figs,plot_results
 # ***********************************************************************************************************
 
 # save figures here
-data_dir = os.getenv('DATA_DIR')
-path = '{}/outputs/'.format(data_dir)
+sim_dir = os.getenv('SIM_DIR')
+path = '{}/outputs/'.format(sim_dir)
 
 '''
 Arguments:
@@ -101,18 +101,18 @@ pkw = dict(cmap='viridis',vmin=0., vmax=.5)
 
 # load TPC used for training
 print('\nLoading TPC geometry used for lightmap training...\n')
-with open('tpc.pkl', 'rb') as handle:
+with open(sim_dir+'tpc.pkl', 'rb') as handle:
     tpc = pickle.load(handle)
 print(tpc)
 
 # redefine TPC as reduced volume within field rings and between cathode and anode
 tpc.r = 566.65
 tpc.zmax = -402.97 #tpc.zmax-19.#1199#17#19.
-tpc.zmin = -1580.97#tpc.zmax-1183.#3#21#1183.
+tpc.zmin = -1585.97#tpc.zmax-1183.#3#21#1183.
 
 # load model
 print('\nLoading true lightmap model...\n')
-lm_true = LightMap.load_model('true-lm', 'LightMapHistRZ')
+lm_true = LightMap.load_model(sim_dir+'true-lm', 'LightMapHistRZ')
 print(lm_true, '\n')
 
 # plot the original lightmap

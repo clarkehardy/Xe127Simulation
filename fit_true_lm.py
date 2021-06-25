@@ -27,8 +27,7 @@ def plot_lm_rz(ax, lm, tpc, theta=0, vectorize=False, cbar=True):
     return d
 
 # get environment variables that define paths
-home_dir = os.getenv('HOME')
-data_dir = os.getenv('DATA_DIR')
+sim_dir = os.getenv('SIM_DIR')
 
 # command line arguments to choose which calibration data to use
 parser = argparse.ArgumentParser()
@@ -45,7 +44,7 @@ if read_again:
     filelist = []
     with open('filelist.txt','r') as infile:
         for line in infile:
-            filelist.append('{}/../akojamil/chroma/data/nexo/2020_sensitivity_lightmap_new/'.format(data_dir)+line[:-1])
+            filelist.append('{}/../akojamil/chroma/data/nexo/2020_sensitivity_lightmap_new/'.format(sim_dir)+line[:-1])
 
     # read out keys necessary for lightmap training
     Input = pd.DataFrame()
@@ -56,11 +55,11 @@ if read_again:
     LMap.GetData(Keys=Keys, Files=filelist, Multi=False)
     LMap.PrintEfficiency()
     LMap.Reshape()
-    with open('{}/lm-analysis/LMap.pkl'.format(home_dir),'wb') as pickle_file:
+    with open('{}/LMap.pkl'.format(sim_dir),'wb') as pickle_file:
         pickle.dump(LMap,pickle_file)
 
 else:
-    with open('{}/lm-analysis/LMap.pkl'.format(home_dir),'rb') as infile:
+    with open('{}/LMap.pkl'.format(sim_dir),'rb') as infile:
         LMap = pickle.load(infile)
 
 # extract efficiency and position information
@@ -88,7 +87,7 @@ train = x,y,z,efficiency
 # ***********************************************************************************************************
 
 # pickle TPC for use in retraining
-with open('{}/lm-analysis/tpc.pkl'.format(home_dir),'wb') as handle:
+with open('{}/tpc.pkl'.format(sim_dir),'wb') as handle:
     pickle.dump(tpc, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # define LightMapHistRZ object
@@ -99,11 +98,11 @@ lm_true.fit(*train)
 print(lm_true)
 
 # plot the result
-fig,ax = plt.subplots(figsize=(4,3))
+fig,ax = plt.subplots(figsize=(3.5,5))
 plot_lm_rz(ax,lm_true,tpc)
 plt.tight_layout()
 plt.show()
 
 # saving model
-model_dir = '{}/lm-analysis/true-lm'.format(home_dir)
+model_dir = '{}/true-lm'.format(sim_dir)
 LightMap.save_model(model_dir, lm_true.kind, lm_true)

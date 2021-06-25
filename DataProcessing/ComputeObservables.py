@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pickle
+import os
 import LightMap
 
 #####################################################################################
@@ -8,17 +9,20 @@ import LightMap
 #####################################################################################
 def ComputeObservedLight( dfsim ):
 
+    # get environment variable with path to TPC and true lightmap
+    sim_dir = os.getenv('SIM_DIR')
+    
     # load lightmap used to sample observed light
-    lm_true = LightMap.load_model('../true-lm', 'LightMapHistRZ')
+    lm_true = LightMap.load_model(sim_dir+'true-lm', 'LightMapHistRZ')
 
     # load TPC used for training
-    with open('../tpc.pkl', 'rb') as handle:
+    with open(sim_dir+'tpc.pkl', 'rb') as handle:
         tpc = pickle.load(handle)
 
     output_dict = dict()
     detected_photoelectrons = lm_true.sample_n_collected(dfsim['fGenX'], dfsim['fGenY'], \
-                                                       dfsim['fGenZ'] + tpc.zmin - min(dfsim['fGenZ']), \
-                                                       dfsim['fInitNOP'], qe=0.1, ap=0.2, seed=1)
+                                                         dfsim['fGenZ'], dfsim['fInitNOP'], \
+                                                         qe=0.1, ap=0.2, seed=1)
 
     corrected_photoelectrons = detected_photoelectrons / \
                                lm_true.do_call(dfsim['fGenX'], dfsim['fGenY'], dfsim['fGenZ'])
