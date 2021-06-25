@@ -1,4 +1,4 @@
-# lm-analysis
+# Xe127Simulation
 
 This repository contains the scripts to simulate and analyze xenon-127 calibration data using `nexo-offline`.
 
