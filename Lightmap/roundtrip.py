@@ -168,13 +168,8 @@ cuts = cuts & ~(data['Observed Light']==0)
 after_photon = len(data[cuts].index)
 
 # apply fiducial cut
-fidcut = True
-if(fidcut==True):
-    zlim = [tpc.zmin+standoff,tpc.zmax-standoff]
-    rlim = [0,tpc.r-standoff]
-else:
-    zlim = [tpc.zmin,tpc.zmax]
-    rlim = [0,tpc.r]
+zlim = [tpc.zmin+standoff,tpc.zmax-standoff]
+rlim = [0,tpc.r-standoff]
 inside_z = abs(data.z.values-(zlim[1]-zlim[0])/2.-zlim[0])>(zlim[1]-zlim[0])/2.
 inside_r = abs(data.weighted_radius.values-(rlim[1]-rlim[0])/2.-rlim[0])>(rlim[1]-rlim[0])/2.
 cuts = cuts & (~inside_z & ~inside_r)
