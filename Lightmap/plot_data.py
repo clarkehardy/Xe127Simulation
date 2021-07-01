@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import histlite as hl
 
+# take this out later
+import time
+
 # set plotting style
 plt.rc('figure', dpi=200, figsize=(4,3), facecolor='w')
 plt.rc('savefig', dpi=200, facecolor='w')
@@ -182,20 +185,30 @@ def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     plt.savefig(path+'eff_compare_'+name+'.png',bbox_inches='tight')
 
 def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
-    # plot differences between LightMaps
-    fig, ax = plt.subplots(1,1,figsize=(4,5))
+    # compute lightmap on a grid uniformly by volume for accuracy calculations
+    rang_uniform = (rlim[0]**2,rlim[1]**2), (zlim[0],zlim[1])
+    f = lambda r2, z: lm_true(np.sqrt(r2), np.repeat(0, r2.size), z, cyl=True)
+    h_true_uniform = hl.hist_from_eval(f, vectorize=False, bins=1000, range=rang_uniform)
+    f = lambda r2, z: lm_again(np.sqrt(r2), np.repeat(0, r2.size), z, cyl=True)
+    h_again_uniform = hl.hist_from_eval(f, vectorize=False, bins=1000, range=rang_uniform)
+    var = np.var(h_true_uniform.values/h_again_uniform.values)
+    mean = np.mean(h_true_uniform.values/h_again_uniform.values)
+    acc = np.ndarray.flatten(h_true_uniform.values/h_again_uniform.values)
+
+    # compute lightmap on a grid uniformly in R and Z for plotting
     rang = (rlim[0],rlim[1]), (zlim[0],zlim[1])
     f = lambda r, z: lm_true(r, np.repeat(0, r.size), z, cyl=True)
-    h_nn = hl.hist_from_eval(f, vectorize=False, bins=200, range=rang)
+    h_true = hl.hist_from_eval(f, vectorize=False, bins=1000, range=rang)
     f = lambda r, z: lm_again(r, np.repeat(0, r.size), z, cyl=True)
-    h_again = hl.hist_from_eval(f, vectorize=False, bins=200, range=rang)
-    d = hl.plot2d(ax, h_nn / h_again, cbar=True, cmap='RdBu_r',vmin=0.95,vmax=1.05)
+    h_again = hl.hist_from_eval(f, vectorize=False, bins=1000, range=rang)
+    # plot differences between LightMaps
+    fig, ax = plt.subplots(1,1,figsize=(4,5))
+    d = hl.plot2d(ax, h_true / h_again, cbar=True, cmap='RdBu_r',vmin=0.95,vmax=1.05)
     d['colorbar'].set_label(r'True Lightmap / Corrected Lightmap')
     ax.set_xlabel(r'$r$ (mm)')
     ax.set_ylabel(r'$z$ (mm)')
     ax.set_title(r'Corrected Lightmap Accuracy')
     ax.set_aspect('equal')
-    plt.tight_layout()
     plt.savefig(path+'difference_'+name+'.png',bbox_inches='tight')
 
     # plot side-by-side of original and retrained LightMap
@@ -210,19 +223,14 @@ def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
     for ax in axs[1:-1]:
         ax.set_yticks([])
         ax.set_ylabel('')
-    plt.tight_layout()
     plt.savefig(path+'compare_'+name+'.png',bbox_inches='tight')
 
     # plot histogram of the reconstructed lightmap accuracy
-    var = np.var(h_nn.values/h_again.values)
-    mean = np.mean(h_nn.values/h_again.values)
     plt.figure(figsize=(4,3))
-    acc = np.ndarray.flatten(h_nn.values/h_again.values)
     plt.hist(acc,bins=100,range=(max([0.8,min(acc)]),min([1.2,max(acc)])),color='navy',histtype=u'step')
     plt.title('Corrected Lightmap Accuracy')
     plt.xlabel('True Lightmap / Corrected Lightmap')
     plt.ylabel('Counts')
-    plt.tight_layout()
     plt.savefig(path+'accuracy_'+name+'.png',bbox_inches='tight')
 
     return mean,var
