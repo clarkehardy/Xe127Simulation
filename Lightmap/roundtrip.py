@@ -244,7 +244,7 @@ if fit_type=='NN':
     if layers==None:
         layers = [512, 256, 128, 64, 32]
     if learning_rate==None:
-        learning_rate = 0.001
+        learning_rate = 0.0004
     if ensemble_size==None:
         ensemble_size = 3
     if batch_size==None:
