@@ -16,4 +16,4 @@ export SIM_DIR="path/to/folder/"
 
 [DataProcessing](https://github.com/clarkehardy/lm-analysis/tree/master/DataProcessing) contains Python scripts to process the raw Root files and produce the reduced data that can be used for electron lifetime and lightmap analysis.
 
-[Lightmap](https://github.com/clarkehardy/lm-analysis/tree/master/Lightmap) contains the scripts to reconstruct the nEXO lightmap from the xe-127 calibration data. This requires the `LightMap` package from `nexo-offline`.
+[Lightmap](https://github.com/clarkehardy/lm-analysis/tree/master/Lightmap) contains the scripts to reconstruct the nEXO lightmap from the Xe-127 calibration data. This requires the `LightMap` package from `nexo-offline`.
