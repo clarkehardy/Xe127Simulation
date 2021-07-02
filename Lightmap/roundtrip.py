@@ -35,6 +35,7 @@ fit_type       :    The type of fit to apply to the data. Currently 'NN' or 'KS'
 -batch_size    :    Batch size used in NN training
 -ensemble_size :    Number of NNs in the ensemble
 -sigma         :    Smoothing length scale for kernel smoother
+-seed          :    Random state used to get subset of events from input files
 -input_files   :    List of processed simulation files
 '''
 parser = argparse.ArgumentParser()
@@ -47,6 +48,7 @@ parser.add_argument('-layers',type=int,nargs='+')
 parser.add_argument('-batch_size',type=int)
 parser.add_argument('-ensemble_size',type=int)
 parser.add_argument('-sigma',type=float)
+parser.add_argument('-seed',type=int,default=1)
 parser.add_argument('description',type=str)
 parser.add_argument('standoff',type=float)
 parser.add_argument('events',type=int)
@@ -66,6 +68,7 @@ layers = args.layers
 batch_size = args.batch_size
 ensemble_size = args.ensemble_size
 sigma = args.sigma
+seed = args.seed
 
 if fit_type!='NN' and fit_type!='KS':
     print('\nFit type not recognized. Exiting.\n')
@@ -125,22 +128,21 @@ plt.savefig(path+'original.png',bbox_inches='tight')
 # LOOP THROUGH ALL DATASETS
 # *********************************************************************************************************
 
-remainder = events % 10000
-num_datasets = int(np.ceil(events/10000))
-data = []
-
 # loop through and collect the specified number of events
-print('Collecting {:d} events from processed simulation files...\n'.format(events))
-for data_file in input_files[:num_datasets]:
+data = []
+print('Collecting events from {:d} processed simulation files...\n'.format(len(input_files)))
+for data_file in input_files:
     input_file = gzip.open(data_file,'rb')
     this_df = pickle.load(input_file)
-    if data_file==input_files[num_datasets-1] and remainder!=0:
-        this_df = this_df[:remainder]
     data.append(this_df)
     input_file.close()
 
 # add to pandas dataframe
 data = pd.concat(data,ignore_index=True)
+
+# get a sample of events from the full set
+print('Sampling {:d} events randomly using seed {:d}...\n'.format(events,seed))
+data = data.sample(events, random_state=seed)
 
 # compute z from the drift time and TPC dimensions
 # drift velocity from 2021 sensitivity paper
@@ -296,7 +298,7 @@ print('-----------------------------\n')
 params_list = [[name,
                 fit_type,
                 events,
-                standoff
+                standoff,
                 int(both_peaks)+1,
                 np.array(layers),
                 learning_rate,
