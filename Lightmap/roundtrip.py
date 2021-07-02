@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import histlite as hl
 import pandas as pd
 import LightMap
@@ -36,6 +35,7 @@ fit_type       :    The type of fit to apply to the data. Currently 'NN' or 'KS'
 -ensemble_size :    Number of NNs in the ensemble
 -sigma         :    Smoothing length scale for kernel smoother
 -seed          :    Random state used to get subset of events from input files
+-validation    :    Use extra calibration events to compute validation loss
 -input_files   :    List of processed simulation files
 '''
 parser = argparse.ArgumentParser()
@@ -49,6 +49,7 @@ parser.add_argument('-batch_size',type=int)
 parser.add_argument('-ensemble_size',type=int)
 parser.add_argument('-sigma',type=float)
 parser.add_argument('-seed',type=int,default=1)
+parser.add_argument('-validation',action='store_true',default=False)
 parser.add_argument('description',type=str)
 parser.add_argument('standoff',type=float)
 parser.add_argument('events',type=int)
@@ -69,6 +70,7 @@ batch_size = args.batch_size
 ensemble_size = args.ensemble_size
 sigma = args.sigma
 seed = args.seed
+validation = args.validation
 
 if fit_type!='NN' and fit_type!='KS':
     print('\nFit type not recognized. Exiting.\n')
@@ -141,9 +143,15 @@ for data_file in input_files:
 data = pd.concat(data,ignore_index=True)
 
 # get a sample of events from the full set
-print('Sampling {:d} events randomly using seed {:d}...\n'.format(events,seed))
-data = data.sample(events, random_state=seed)
+val_factor = 1
+val_string = ''
+if validation:
+    val_factor = 2
+    val_string = 'and {:d} events for validation '.format(events)
 
+print('Sampling {:d} events for calibration '.format(events)+val_string+'using seed {:d}...\n'.format(seed))
+data = data.sample(val_factor*events, random_state=seed)
+    
 # compute z from the drift time and TPC dimensions
 # drift velocity from 2021 sensitivity paper
 # TPC center + (TPC length)/2 - TPC top to anode
@@ -230,14 +238,19 @@ if not rt_on:
 # FIT A LIGHTMAP MODEL TO THE DATA
 # *****************************************************************************************************
 
+# create separate validation dataset
+validation_split = 0
+if validation:
+    validation_split = 0.5
+
 # define new training set
 if both_peaks == True:
     train_again = data.weighted_x.values[cuts], data.weighted_y.values[cuts], data.z.values[cuts], data.eff.values[cuts]
-    print('Training on both peaks with {:d} events total.\n'.format(len(train_again[0])))
+    print('Training on both peaks with {:d} events total.\n'.format(int(round(len(train_again[0])*(1-validation_split)))))
 else:
     train_again = data.weighted_x.values[(data['peak']==2) & cuts],data.weighted_y.values[(data['peak']==2) & cuts],\
                   data.z.values[(data['peak']==2) & cuts],data.eff.values[(data['peak']==2) & cuts]
-    print('Training on one peak with {:d} events total.\n'.format(len(train_again[0])))
+    print('Training on one peak with {:d} events total.\n'.format(int(round(len(train_again[0])*(1-validation_split)))))
 
 # define neural net lightmap
 if fit_type=='NN':
@@ -264,17 +277,21 @@ print('Fitting a lightmap to the data...\n')
 times = []
 for i in range(ensemble_size):
     starttime = time.time()
-    lm_again.fit(*train_again)
+    lm_again.fit(*train_again,validation_split=validation_split)
     endtime = time.time()
     times.append(endtime-starttime)
 
 # save losses for NN model
 if fit_type=='NN':
     losses = []
+    val_losses = []
     for i in range(ensemble_size):
         losses.append(np.array(lm_again.histories[i].history['loss']))
+        if validation:
+            val_losses.append(np.array(lm_again.histories[i].history['val_loss']))
 else:
     losses = None
+    val_losses = None
 
 # save fitted lightmap
 LightMap.save_model(path+'LightMap_'+name,lm_again.kind,lm_again)
@@ -308,6 +325,7 @@ params_list = [[name,
                 len(train_again[0]),
                 np.array(times),
                 np.array(losses),
+                np.array(val_losses),
                 np.sqrt(var),
                 mean
                 ]]
@@ -325,6 +343,7 @@ columns = ['name',
            'num_events',
            'times',
            'losses',
+           'val_losses',
            'accuracy_std_dev',
            'accuracy_mean'
            ]
