@@ -55,7 +55,7 @@ def proj2d(x,y,xlabel='x',ylabel='y',bins=200,s=0.001,color='blue'):
     ax_histy.set_ylim(ax_scatter.get_ylim())
     ax_histx.set_yticks([])
     ax_histy.set_xticks([])
-    return ax_histx,ax_histy,ax_scatter
+    return f,ax_histx,ax_histy,ax_scatter
 
 def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     # plot spatial distribution of events in r and z
@@ -125,7 +125,7 @@ def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     fig.savefig(path+'fid_cut_'+name+'.png',bbox_inches='tight')
 
     # plot MC truth scatter plot
-    ax_histx,ax_histy,ax_scatter = proj2d(data.fNTE.values,data.fInitNOP.values,xlabel='MC Truth Ionization (Number of Electrons)',\
+    fig,ax_histx,ax_histy,ax_scatter = proj2d(data.fNTE.values,data.fInitNOP.values,xlabel='MC Truth Ionization (Number of Electrons)',\
                                           ylabel='MC Truth Scintillation (Number of Photons)',s=0.2)
     fig.savefig(path+'MCTruth_'+name+'.png',bbox_inches='tight')
 
