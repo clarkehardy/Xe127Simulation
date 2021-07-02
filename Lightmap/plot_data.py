@@ -4,9 +4,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import histlite as hl
 
-# take this out later
-import time
-
 # set plotting style
 plt.rc('figure', dpi=200, figsize=(4,3), facecolor='w')
 plt.rc('savefig', dpi=200, facecolor='w')
@@ -66,123 +63,123 @@ def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     hist,r_edges,z_edges = np.histogram2d(data.weighted_radius.values[cuts],data.z.values[cuts],bins=50,range=([rlim,zlim]),density=True)
     r_bins = (r_edges[:-1]+r_edges[1:])/2.
     z_bins = (z_edges[:-1]+z_edges[1:])/2.
-    R,Z = np.meshgrid(r_bins,z_bins)
-    im = ax.imshow(hist.T/(2*np.pi*r_bins[np.newaxis,:]),extent=[r_edges.min(),r_edges.max(),z_edges.min(),z_edges.max()])
-    vol = rlim[1]**2*np.pi*(zlim[1]-zlim[0])
-    cbar = plt.colorbar(im)
-    cbar.set_label('Event density (events/mm$^3$)')
+    im = ax.imshow(hist.T*np.sum(cuts)/(2*np.pi*r_bins[np.newaxis,:]),extent=[r_edges.min(),r_edges.max(),z_edges.min(),z_edges.max()])
+    cbar = fig.colorbar(im)
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.set_label('Event Density (events/mm$^3$)')
     ax.set_xlim([0,tpc.r])
     ax.set_ylim([tpc.zmin,tpc.zmax])
     ax.set_xlabel(r'$r$ (mm)')
     ax.set_ylabel(r'$z$ (mm)')
+    ax.set_title('Event Distribution')
     ax.set_aspect('equal')
-    plt.tight_layout()
-    plt.savefig(path+'spatial_rz_'+name+'.png',bbox_inches='tight')
+    fig.tight_layout()
+    fig.savefig(path+'spatial_rz_'+name+'.png',bbox_inches='tight')
 
     # plot spatial distribution x and y
-    fig,ax = plt.subplots(1,1,figsize=(5,5))
+    fig,ax = plt.subplots(figsize=(5,5))
     hist,x_edges,y_edges = np.histogram2d(data.weighted_x.values[cuts],data.weighted_y.values[cuts],bins=200,density=True)
     x_bins = (x_edges[:-1]+x_edges[1:])/2.
     y_bins = (y_edges[:-1]+y_edges[1:])/2.
-    im = ax.imshow(hist.T/(zlim[1]-zlim[0]),extent=[x_edges.min(),x_edges.max(),y_edges.min(),y_edges.max()])
+    im = ax.imshow(hist.T*np.sum(cuts)/(zlim[1]-zlim[0]),extent=[x_edges.min(),x_edges.max(),y_edges.min(),y_edges.max()])
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    cbar = plt.colorbar(im,cax=cax)
-    cbar.set_label('Event density (events/mm$^3$)')
+    cbar = fig.colorbar(im,cax=cax)
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.set_label('Event Density (events/mm$^3$)')
     ax.set_xlabel(r'$x$ (mm)')
     ax.set_ylabel(r'$y$ (mm)')
+    ax.set_title('Event Distribution')
     ax.set_aspect('equal')
-    plt.tight_layout()
-    plt.savefig(path+'spatial_xy_'+name+'.png',bbox_inches='tight')
+    fig.tight_layout()
+    fig.savefig(path+'spatial_xy_'+name+'.png',bbox_inches='tight')
 
     # plot raw scatter colored by efficiency
-    plt.figure(figsize=(3.5,5))
-    plt.scatter(data.weighted_radius.values[cuts],data.z.values[cuts],c=data.eff.values[cuts],s=0.1,cmap='spring')
-    plt.xlabel(r'$r$ (mm)')
-    plt.ylabel(r'$z$ (mm)')
-    plt.title('Calibration Data')
-    cbar = plt.colorbar()
-    ax = plt.gca()
+    fig,ax = plt.subplots(figsize=(3.5,5))
+    sc = ax.scatter(data.weighted_radius.values[cuts],\
+                    data.z.values[cuts],c=data.eff.values[cuts],s=0.1,cmap='spring')
+    ax.set_xlabel(r'$r$ (mm)')
+    ax.set_ylabel(r'$z$ (mm)')
+    ax.set_title('Calibration Events')
+    cbar = fig.colorbar(sc)
     cbar.set_label('Collection Efficiency')
     ax.set_xlim([0,tpc.r])
     ax.set_ylim([tpc.zmin,tpc.zmax])
     ax.set_aspect('equal')
-    plt.tight_layout()
-    plt.savefig(path+'raw_scatter_'+name+'.png',bbox_inches='tight')
+    fig.tight_layout()
+    fig.savefig(path+'raw_scatter_'+name+'.png',bbox_inches='tight')
 
     # plot fiducial cut
     fig,ax = plt.subplots(figsize=(3.5,5))
     d = plot_lm_rz(ax,lm_true,tpc)
-    plt.axvline(x=rlim[0],ymin=(zlim[0]-tpc.zmin)/(tpc.zmax-tpc.zmin),\
+    ax.axvline(x=rlim[0],ymin=(zlim[0]-tpc.zmin)/(tpc.zmax-tpc.zmin),\
                 ymax=(zlim[1]-tpc.zmin)/(tpc.zmax-tpc.zmin),color='red',ls='--',lw=0.5)
-    plt.axvline(x=rlim[1],ymin=(zlim[0]-tpc.zmin)/(tpc.zmax-tpc.zmin),\
+    ax.axvline(x=rlim[1],ymin=(zlim[0]-tpc.zmin)/(tpc.zmax-tpc.zmin),\
                 ymax=(zlim[1]-tpc.zmin)/(tpc.zmax-tpc.zmin),color='red',ls='--',lw=0.5)
-    plt.axhline(y=zlim[0],xmin=rlim[0]/tpc.r,xmax=rlim[1]/tpc.r,color='red',ls='--',lw=0.5)
-    plt.axhline(y=zlim[1],xmin=rlim[0]/tpc.r,xmax=rlim[1]/tpc.r,color='red',ls='--',lw=0.5)
+    ax.axhline(y=zlim[0],xmin=rlim[0]/tpc.r,xmax=rlim[1]/tpc.r,color='red',ls='--',lw=0.5)
+    ax.axhline(y=zlim[1],xmin=rlim[0]/tpc.r,xmax=rlim[1]/tpc.r,color='red',ls='--',lw=0.5)
     ax.set_xlim([0,tpc.r])
     ax.set_ylim([tpc.zmin,tpc.zmax])
     ax.set_title('Fiducial Volume Cut')
-    plt.tight_layout()
-    plt.savefig(path+'fid_cut_'+name+'.png',bbox_inches='tight')
+    fig.tight_layout()
+    fig.savefig(path+'fid_cut_'+name+'.png',bbox_inches='tight')
 
     # plot MC truth scatter plot
     ax_histx,ax_histy,ax_scatter = proj2d(data.fNTE.values,data.fInitNOP.values,xlabel='MC Truth Ionization (Number of Electrons)',\
                                           ylabel='MC Truth Scintillation (Number of Photons)',s=0.2)
-    plt.savefig(path+'MCTruth_'+name+'.png',bbox_inches='tight')
+    fig.savefig(path+'MCTruth_'+name+'.png',bbox_inches='tight')
 
     # plot charge and light with selection cut
     xvals = np.linspace(0,26500,10)
     yvals = peak_sep(xvals)
-    plt.figure(figsize=(4,3))
-    plt.hist2d(data.evt_charge_including_noise.values[cuts],data['Observed Light'][cuts],200,norm=mpl.colors.LogNorm())
-    plt.xlabel('Detected electrons')
-    plt.ylabel('Detected photons')
-    plt.plot(xvals,yvals,'--r',lw=1)
-    plt.xlim([0,30000])
-    plt.ylim([0,900])
-    plt.colorbar()
-    plt.tight_layout()
-    plt.savefig(path+'charge_light_'+name+'.png',bbox_inches='tight')
+    fig,ax = plt.subplots(figsize=(4,3))
+    ht = ax.hist2d(data.evt_charge_including_noise.values[cuts],data['Observed Light'][cuts],200,norm=mpl.colors.LogNorm())
+    ax.set_xlabel('Detected Electrons')
+    ax.set_ylabel('Detected Photons')
+    ax.plot(xvals,yvals,'--r',lw=1)
+    fig.colorbar(ht[3])
+    fig.tight_layout()
+    fig.savefig(path+'charge_light_'+name+'.png',bbox_inches='tight')
 
     # plot a histogram of the charge signal
-    plt.figure(figsize=(4,3))
-    plt.hist(data.evt_charge_including_noise.values[cuts],bins=100,color='blue',label='Observed charge',histtype=u'step')
-    plt.xlabel('Charge Signal (Number of Electrons)')
-    plt.ylabel('Counts')
-    plt.legend(loc='best')
-    plt.tight_layout()
-    plt.savefig(path+'charge_'+name+'.png')
+    fig,ax = plt.subplots(figsize=(4,3))
+    ax.hist([data['fNTE'][cuts],data.evt_charge_including_noise.values[cuts]],bins=100,\
+            color=['blue','green'],label=['MC truth electrons','Detected electrons'],histtype=u'step')
+    ax.set_xlabel('Number of Electrons')
+    ax.set_ylabel('Counts')
+    ax.legend(loc='best',prop={'size': 8})
+    fig.tight_layout()
+    fig.savefig(path+'charge_'+name+'.png')
 
     # plot a 2d histogram of the light signal
-    plt.figure(figsize=(4,3))
-    plt.hist2d(data.fInitNOP.values[cuts],data['Observed Light'][cuts],bins=100,norm=mpl.colors.LogNorm())
-    plt.xlabel('MC Truth Scintillation (Number of Photons)')
-    plt.ylabel('Detected Photoelectrons')
-    plt.colorbar()
-    plt.tight_layout()
-    plt.savefig(path+'light_'+name+'.png',bbox_inches='tight')
+    fig,ax = plt.subplots(figsize=(4,3))
+    ht = ax.hist2d(data.fInitNOP.values[cuts],data['Observed Light'][cuts],bins=200,norm=mpl.colors.LogNorm())
+    ax.set_xlabel('MC Truth Photons')
+    ax.set_ylabel('Detected Photons')
+    fig.colorbar(ht[3])
+    fig.tight_layout()
+    fig.savefig(path+'light_'+name+'.png',bbox_inches='tight')
 
     # plot a histogram of the light signal
-    plt.figure(figsize=(4,3))
-    plt.hist([data.fInitNOP.values[data['peak']==1]/np.mean(data.fInitNOP.values[data['peak']==1]),\
-              data['Observed Light'][data['peak']==1]/np.mean(data['Observed Light'][data['peak']==1])],\
-             bins=100,color=['darkorange','red'],histtype=u'step',density=False,label=['MC Truth','Detected'])
-    plt.xlabel('Relative Number of Photons')
-    plt.ylabel('Counts')
-    plt.title('Detected Photon Sampling')
-    plt.legend(loc='best')
-    plt.tight_layout()
-    plt.savefig(path+'lighthist_'+name+'.png',bbox_inches='tight')
+    fig,ax = plt.subplots(figsize=(4,3))
+    ax.hist([data.fInitNOP.values[cuts],data['Observed Light'][cuts]\
+             *np.mean(data.fInitNOP.values[cuts])/np.mean(data['Observed Light'][cuts])],\
+             bins=100,color=['darkorange','red'],histtype=u'step',density=False,label=['MC truth photons','Detected photons, scaled'])
+    ax.set_xlabel('Number of Photons')
+    ax.set_ylabel('Counts')
+    ax.legend(loc='best',prop={'size': 8})
+    fig.tight_layout()
+    fig.savefig(path+'lighthist_'+name+'.png',bbox_inches='tight')
 
     # plot efficiency curve for both peaks
-    plt.figure(figsize=(4,3))
-    plt.hist([data['eff'][data['peak']==1],data['eff'][data['peak']==2],data['eff']],bins=100,\
+    fig,ax = plt.subplots(figsize=(4,3))
+    ax.hist([data['eff'][cuts & (data['peak']==1)],data['eff'][cuts & (data['peak']==2)],data['eff'][cuts]],bins=100,\
              color=['green','blue','black'],histtype=u'step',label=['Low E peak','High E peak','Both peaks'])
-    plt.xlabel('Photon Collection Efficiency')
-    plt.ylabel('Counts')
-    plt.legend(loc='best')
-    plt.tight_layout()
-    plt.savefig(path+'eff_compare_'+name+'.png',bbox_inches='tight')
+    ax.set_xlabel('Photon Collection Efficiency')
+    ax.set_ylabel('Counts')
+    ax.legend(loc='best',prop={'size': 8})
+    fig.tight_layout()
+    fig.savefig(path+'eff_compare_'+name+'.png',bbox_inches='tight')
 
 def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
     # compute lightmap on a grid uniformly by volume for accuracy calculations
@@ -202,19 +199,19 @@ def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
     f = lambda r, z: lm_again(r, np.repeat(0, r.size), z, cyl=True)
     h_again = hl.hist_from_eval(f, vectorize=False, bins=1000, range=rang)
     # plot differences between LightMaps
-    fig, ax = plt.subplots(1,1,figsize=(4,5))
+    fig, ax = plt.subplots(figsize=(4,5))
     d = hl.plot2d(ax, h_true / h_again, cbar=True, cmap='RdBu_r',vmin=0.95,vmax=1.05)
-    d['colorbar'].set_label(r'True Lightmap / Corrected Lightmap')
+    d['colorbar'].set_label(r'True Lightmap / Reconstructed Lightmap')
     ax.set_xlabel(r'$r$ (mm)')
     ax.set_ylabel(r'$z$ (mm)')
-    ax.set_title(r'Corrected Lightmap Accuracy')
+    ax.set_title(r'Reconstructed Lightmap Accuracy')
     ax.set_aspect('equal')
-    plt.savefig(path+'difference_'+name+'.png',bbox_inches='tight')
+    fig.savefig(path+'difference_'+name+'.png',bbox_inches='tight')
 
     # plot side-by-side of original and retrained LightMap
     fig, axs = plt.subplots(1, 3, figsize=(6,5), gridspec_kw=dict(width_ratios=[1,1,.05]))
     these_lms = lm_true, lm_again
-    titles = 'Original Lightmap', 'Round-trip Lightmap',
+    titles = 'True Lightmap', 'Reconstructed Lightmap',
     for (ax,lm, title) in zip(axs, these_lms, titles):
         d = plot_lm_rz(ax, lm, tpc, cbar=False)
         ax.set_title(title)
@@ -223,14 +220,14 @@ def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
     for ax in axs[1:-1]:
         ax.set_yticks([])
         ax.set_ylabel('')
-    plt.savefig(path+'compare_'+name+'.png',bbox_inches='tight')
+    fig.savefig(path+'compare_'+name+'.png',bbox_inches='tight')
 
     # plot histogram of the reconstructed lightmap accuracy
-    plt.figure(figsize=(4,3))
-    plt.hist(acc,bins=100,range=(max([0.8,min(acc)]),min([1.2,max(acc)])),color='navy',histtype=u'step')
-    plt.title('Corrected Lightmap Accuracy')
-    plt.xlabel('True Lightmap / Corrected Lightmap')
-    plt.ylabel('Counts')
-    plt.savefig(path+'accuracy_'+name+'.png',bbox_inches='tight')
+    fig,ax = plt.subplots(figsize=(4,3))
+    ax.hist(acc,bins=100,range=(max([0.8,min(acc)]),min([1.2,max(acc)])),color='navy',histtype=u'step')
+    ax.set_title('Reconstructed Lightmap Accuracy')
+    ax.set_xlabel('True Lightmap / Reconstructed Lightmap')
+    ax.set_ylabel('Counts')
+    fig.savefig(path+'accuracy_'+name+'.png',bbox_inches='tight')
 
     return mean,var
