@@ -57,7 +57,7 @@ parser.add_argument('fit_type',type=str)
 
 args = parser.parse_args()
 input_files = args.input_files
-rt_on = args.train
+train = args.train
 make_plots = args.make_plots
 both_peaks = args.both_peaks
 standoff = args.standoff
@@ -84,14 +84,12 @@ if not make_plots:
 # **********************************************************************************************************
 
 # cut to select high energy peak
-cl_slope = -0.068
+cl_slope = -0.0915
 def peak_sep(x):
-    return cl_slope*x+1600
+    return cl_slope*x+1980
 
 # cut out any other peaks
 def cl_cut(x,y):
-    #       bottom limit         right limit       left limit
-    #return (y>cl_slope*x+580) & (y<-x*cl_slope) & (y>-x*cl_slope-790)
     return y>100
 
 # set plotting style
@@ -124,7 +122,9 @@ print(lm_true, '\n')
 fig,ax = plt.subplots(figsize=(3.5,5))
 d = plot_lm_rz(ax,lm_true,tpc)
 ax.set_title('True Lightmap')
-plt.savefig(path+'original.png',bbox_inches='tight')
+if make_plots:
+    fig.tight_layout()
+fig.savefig(path+'original.png',bbox_inches='tight')
 
 # *********************************************************************************************************
 # LOOP THROUGH ALL DATASETS
@@ -214,11 +214,12 @@ print('Charge/light cut efficiency: {:.1f} %\n'.format(after_chargelight*100./af
 # compute mean number of photons for each peak
 peaks = np.array((0,0))
 for j in range(2):
-    peaks[j] = np.mean(data['fInitNOP'][(data['peak']==j+1) & cuts])
-
+    peaks[j] = np.mean(data['Observed Light'][(data['peak']==j+1) & cuts])
+    
 # compute the efficiency using the predicted mean of each peak
 print('Computing the efficiency from the data selected...\n')
-data['eff'] = data['Observed Light']/(qe*peaks[np.array(data.peak.values-1,dtype=int)])
+mean_eff = np.mean(data['Observed Light'][(data.peak.values==2) & cuts]/data['fInitNOP'][(data.peak.values==2) & cuts])
+data['eff'] = data['Observed Light']*mean_eff/(qe*peaks[np.array(data.peak.values-1,dtype=int)])
 
 np.savetxt(path+'effic_'+name+'.txt',np.array(data.eff.values))
 
@@ -231,7 +232,7 @@ if make_plots:
     make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep)
     plt.show()
 
-if not rt_on:
+if not train:
     sys.exit()
 
 # *****************************************************************************************************
@@ -244,7 +245,7 @@ if validation:
     validation_split = 0.5
 
 # define new training set
-if both_peaks == True:
+if both_peaks:
     train_again = data.weighted_x.values[cuts], data.weighted_y.values[cuts], data.z.values[cuts], data.eff.values[cuts]
     print('Training on both peaks with {:d} events total.\n'.format(int(round(len(train_again[0])*(1-validation_split)))))
 else:
