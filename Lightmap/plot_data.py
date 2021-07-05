@@ -230,4 +230,4 @@ def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
     ax.set_ylabel('Counts')
     fig.savefig(path+'accuracy_'+name+'.png',bbox_inches='tight')
 
-    return mean,var
+    return mean,var,h_true_uniform,h_again_uniform

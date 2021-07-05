@@ -264,7 +264,8 @@ if fit_type=='NN':
     if batch_size==None:
         batch_size = 64
     lm_again = LightMap.total.LightMapNN(tpc, epochs=10, batch_size=batch_size,
-                                         hidden_layers=layers, lr=learning_rate)
+                                         hidden_layers=layers, lr=learning_rate,
+                                         validation_split=validation_split)
 
 # define Gaussian kernel smoothing lightmap
 if fit_type=='KS':
@@ -278,7 +279,7 @@ print('Fitting a lightmap to the data...\n')
 times = []
 for i in range(ensemble_size):
     starttime = time.time()
-    lm_again.fit(*train_again,validation_split=validation_split)
+    lm_again.fit(*train_again)
     endtime = time.time()
     times.append(endtime-starttime)
 
@@ -303,7 +304,7 @@ LightMap.save_model(path+'LightMap_'+name,lm_again.kind,lm_again)
 
 # make results plots and compute fitting metrics
 print('\nPlotting and saving the results...\n')
-mean,var = plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name)
+mean,var,h_true_uniform,h_again_uniform = plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name)
 
 # print fitting results
 print('Fitting results')
@@ -328,7 +329,9 @@ params_list = [[name,
                 np.array(losses),
                 np.array(val_losses),
                 np.sqrt(var),
-                mean
+                mean,
+                h_true_uniform,
+                h_again_uniform
                 ]]
 
 columns = ['name',
@@ -346,7 +349,9 @@ columns = ['name',
            'losses',
            'val_losses',
            'accuracy_std_dev',
-           'accuracy_mean'
+           'accuracy_mean',
+           'hist_true',
+           'hist_again'
            ]
 
 params = pd.DataFrame(params_list,columns=columns)
