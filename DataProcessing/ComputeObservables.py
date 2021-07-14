@@ -33,11 +33,13 @@ def ComputeObservedLight( dfsim ):
     
     return output_dict
 
+def ComputeObservedLight( df ):
+    return {}
 
 #####################################################################################
 # COMPUTE OBSERVED CHARGE
 #####################################################################################
-def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
+def ComputeObservedCharge( dfelec, pads_flag=False, channel_threshold=-100000 ):
     
     output_dict = dict()
 
@@ -66,6 +68,8 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
     
     counter = 0
 
+    #print(dfelec.head())
+
     for index,row in dfelec.iterrows():
         
         counter += 1
@@ -90,16 +94,22 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
             
             # Local ID's greater than 15 correspond to Y-channels,
             # otherwise they're x-channels
-            if row['fElecChannels.fChannelLocalId'][i] > 15:
-                strip_width = 96.
-                strip_height = 6.
-                xoffset = -96./2.
+            if pads_flag:
+                strip_width = 12.
+                strip_height = 12.
+                xoffset = 0.
                 yoffset = 0.
             else:
-                strip_width = 6.
-                strip_height = 96.
-                xoffset = 0.
-                yoffset = -96./2.
+                if row['fElecChannels.fChannelLocalId'][i] > 15:
+                    strip_width = 96.
+                    strip_height = 6.
+                    xoffset = -96./2.
+                    yoffset = 0.
+                else:
+                    strip_width = 6.
+                    strip_height = 96.
+                    xoffset = 0.
+                    yoffset = -96./2.
             
             if np.array(row['fElecChannels.fChannelNoiseTag'][i]):
                 is_noise_channel.append(True)
@@ -135,6 +145,14 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
                              )
         weighted_x.append(this_weighted_x)
         weighted_y.append(this_weighted_y)        
+
+
+
+
+        #print(is_x_channel)
+        #print(x_positions > this_weighted_x-13.)
+        #print(this_weighted_x)
+        #print(x_positions)
 
         xmask_2strips = (is_x_channel)&(x_positions > this_weighted_x-13.)&(x_positions < this_weighted_x+13.)
         ymask_2strips = (np.invert(is_x_channel))&(y_positions > this_weighted_y-13.)&(y_positions < this_weighted_y+13.)
