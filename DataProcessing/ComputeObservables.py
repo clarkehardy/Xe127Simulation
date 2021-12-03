@@ -41,11 +41,13 @@ def ComputeObservedLight( dfsim ):
     
     return output_dict
 
+def ComputeObservedLight( df ):
+    return {}
 
 #####################################################################################
 # COMPUTE OBSERVED CHARGE
 #####################################################################################
-def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
+def ComputeObservedCharge( dfelec, pads_flag=False, channel_threshold=-100000 ):
     
     output_dict = dict()
 
@@ -71,8 +73,12 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
     weighted_drift = []
     weighted_x = []
     weighted_y = []
-    
+    weighted_x_rms = []
+    weighted_y_rms = []   
+ 
     counter = 0
+
+    #print(dfelec.head())
 
     for index,row in dfelec.iterrows():
         
@@ -91,23 +97,50 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
         
         nch = len(row['fElecChannels.fChannelCharge'])
         num_channels_in_evt.append( nch )
-        
-        
+    
+        if nch == 0:
+           evt_charge_two_strip_cut.append(0.)
+           evt_charge_five_strip_cut.append(0.)
+           evt_charge_six_strip_cut.append(0.)
+           evt_charge_eight_strip_cut.append(0.)
+           evt_charge_including_noise.append(0.)
+           evt_charge_excluding_noise.append(0.)
+           evt_charge_above_threshold.append(0.)
+           num_channels_above_threshold.append(0)
+           num_channels_excluding_noise.append(0)
+           num_channels_collection.append(0)
+           num_collection_below_threshold.append(0)
+           num_channels_induction.append(0)
+           weighted_radius.append(0.)
+           weighted_drift.append(0.)
+           weighted_x.append(0.)
+           weighted_y.append(0.)
+           weighted_x_rms.append(0.)
+           weighted_y_rms.append(0.)
+           num_channels_nonzero_charge_with_noise.append(0)
+           num_channels_nonzero_charge_excluding_noise.append(0)
+           continue 
 
         for i in range(nch):
             
             # Local ID's greater than 15 correspond to Y-channels,
             # otherwise they're x-channels
-            if row['fElecChannels.fChannelLocalId'][i] > 15:
-                strip_width = 96.
-                strip_height = 6.
-                xoffset = -96./2.
+            if pads_flag:
+                strip_width = 12.
+                strip_height = 12.
+                xoffset = 0.
                 yoffset = 0.
             else:
-                strip_width = 6.
-                strip_height = 96.
-                xoffset = 0.
-                yoffset = -96./2.
+                if row['fElecChannels.fChannelLocalId'][i] > 15:
+                    strip_width = 96.
+                    strip_height = 6.
+                    xoffset = -96./2.
+                    yoffset = 0.
+                else:
+                    strip_width = 6.
+                    strip_height = 96.
+                    xoffset = 0.
+                    yoffset = -96./2.
             
             if np.array(row['fElecChannels.fChannelNoiseTag'][i]):
                 is_noise_channel.append(True)
@@ -136,13 +169,21 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
         
         this_weighted_x = np.sum(x_positions*(channel_charges*x_weights))/np.sum(channel_charges*x_weights)
         this_weighted_y = np.sum(y_positions*(channel_charges*y_weights))/np.sum(channel_charges*y_weights)
-        
+       
+        this_weighted_x_rms = np.sqrt( np.sum( (x_positions - this_weighted_x)**2 * (channel_charges*x_weights) ) / \
+                                       np.sum(channel_charges*x_weights) )
+        this_weighted_y_rms = np.sqrt( np.sum( (y_positions - this_weighted_y)**2 * (channel_charges*y_weights) ) / \
+                                       np.sum(channel_charges*y_weights) )
+ 
         weighted_radius.append( np.sqrt(this_weighted_x**2 + this_weighted_y**2) )
         weighted_drift.append(\
                              np.sum(drift_times*channel_charges)/np.sum(channel_charges)
                              )
         weighted_x.append(this_weighted_x)
         weighted_y.append(this_weighted_y)        
+
+        weighted_x_rms.append(this_weighted_x_rms)
+        weighted_y_rms.append(this_weighted_y_rms)
 
         xmask_2strips = (is_x_channel)&(x_positions > this_weighted_x-13.)&(x_positions < this_weighted_x+13.)
         ymask_2strips = (np.invert(is_x_channel))&(y_positions > this_weighted_y-13.)&(y_positions < this_weighted_y+13.)
@@ -208,6 +249,8 @@ def ComputeObservedCharge( dfelec, channel_threshold=-100000 ):
     output_dict['weighted_drift'] = np.array(weighted_drift)
     output_dict['weighted_x'] = np.array(weighted_x)
     output_dict['weighted_y'] = np.array(weighted_y) 
+    output_dict['weighted_x_rms'] = np.array(weighted_x_rms)
+    output_dict['weighted_y_rms'] = np.array(weighted_y_rms)
 
     output_dict['num_channels_nonzero_charge_with_noise'] = \
                     np.array(num_channels_nonzero_charge_with_noise)

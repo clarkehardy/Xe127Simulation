@@ -22,10 +22,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-input_file',type=str)
 parser.add_argument('-output_dir',type=str)
 parser.add_argument('-num_events',type=int)
+parser.add_argument('-pads',type=bool,default=False)
 args = parser.parse_args()
 input_file = args.input_file
 output_dir = args.output_dir
 num_events = args.num_events
+pads_flag = args.pads
 
 filename = input_file.split('/')[-1].split('.')[0]
 
@@ -66,7 +68,7 @@ print('Finished loading {} at {:5.5}s'.format(filename,time.time()-start_time))
 # From sim data, compute observed charge and light 
 ##############################################################################
 observed_light = ComputeObservedLight( dfsim )
-observed_charge = ComputeObservedCharge( dfelec )
+observed_charge = ComputeObservedCharge( dfelec, pads_flag )
 
 observables_dict = {}
 for key, value in observed_light.items():
