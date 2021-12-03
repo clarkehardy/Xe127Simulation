@@ -22,14 +22,22 @@ def ComputeObservedLight( dfsim ):
     output_dict = dict()
     detected_photoelectrons = lm_true.sample_n_collected(dfsim['fGenX'], dfsim['fGenY'], \
                                                          dfsim['fGenZ'], dfsim['fInitNOP'], \
-                                                         qe=0.1, ap=0.2, seed=1)
+                                                         qe=0.186, ap=0.2, seed=1)
 
     corrected_photoelectrons = detected_photoelectrons / \
                                lm_true.do_call(dfsim['fGenX'], dfsim['fGenY'], dfsim['fGenZ'])
 
+    event_radius = []
+    for index,row in dfsim.iterrows():
+        x = row['fXpos']
+        y = row['fYpos']
+        z = row['fZpos']
+        event_radius.append(np.sqrt(np.amax([[(x[i]-x[j])**2+(y[i]-y[j])**2+(z[i]-z[j])**2 for i in range(len(x))] for j in range(len(x))])))
+
     output_dict['Corrected Light'] = np.array(corrected_photoelectrons)
     output_dict['Observed Light'] = np.array(detected_photoelectrons)
     output_dict['fInitNOP'] = np.array(dfsim['fInitNOP'])
+    output_dict['event_radius'] = np.array(event_radius)
     
     return output_dict
 

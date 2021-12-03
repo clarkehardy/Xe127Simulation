@@ -95,7 +95,7 @@ def cl_cut(x,y):
 # set plotting style
 plt.rc('figure', dpi=200, figsize=(4,3), facecolor='w')
 plt.rc('savefig', dpi=200, facecolor='w')
-plt.rc('lines', linewidth=1.5)
+plt.rc('lines', linewidth=3)
 pkw = dict(cmap='viridis',vmin=0., vmax=.5)
 
 # *********************************************************************************************************
@@ -121,7 +121,7 @@ print(lm_true, '\n')
 # plot the original lightmap
 fig,ax = plt.subplots(figsize=(3.5,5))
 d = plot_lm_rz(ax,lm_true,tpc)
-ax.set_title('True Lightmap')
+ax.set_title('Truth Lightmap')
 if make_plots:
     fig.tight_layout()
 fig.savefig(path+'original.png',bbox_inches='tight')
@@ -164,9 +164,14 @@ data['z'] = -402.97 - data.weighted_drift.values*1.709
 
 print('Applying quality cuts to the data...\n')
 
-# cut events with no charge signal
+# cut events larger than a given size (not usually used)
 data_size = len(data.index)
-cuts = ~(data['evt_charge_including_noise']==0)
+evt_size_cut = 5000000.
+cuts = data['event_radius']<evt_size_cut
+after_size = len(data[cuts].index)
+
+# cut events with no charge signal
+cuts = cuts & ~(data['evt_charge_including_noise']==0)
 after_elec = len(data[cuts].index)
 
 # cut events with NaN z values
@@ -186,7 +191,7 @@ cuts = cuts & (~inside_z & ~inside_r)
 after_fiducial = len(data[cuts].index)
 
 # sample based on number of photons generated
-qe = 0.1
+qe = 0.186
 
 # separate low and high energy peaks
 data['peak'] = np.ones(len(data['Observed Light']))
@@ -198,10 +203,18 @@ cut_cond = cl_cut(data.evt_charge_including_noise.values,data['Observed Light'])
 cuts = cuts & cut_cond
 after_chargelight = len(data[cuts].index)
 
+# print information about size of events
+med_size = np.median(data['event_radius'][cuts])
+vol_TPC = np.pi*tpc.r**2*(tpc.zmax-tpc.zmin)
+print('Median event size: {:.2f} mm'.format(med_size))
+print('Number of events at which there is overlap: {:.0f}'.format(vol_TPC/med_size**3))
+
 # print results of cuts with efficiency
-print('Events before thermal electron cut: '+str(data_size))
+print('Events before event size cut: '+str(data_size))
+print('Events after event size cut: '+str(after_size))
+print('Event size cut efficiency: {:.1f} %'.format(after_size*100./data_size))
 print('Events after thermal electron cut: '+str(after_elec))
-print('Thermal electron cut efficiency: {:.1f} %'.format(after_elec*100./data_size))
+print('Thermal electron cut efficiency: {:.1f} %'.format(after_elec*100./after_size))
 print('Events after z quality cut: '+str(after_drift))
 print('z quality cut efficiency: {:.1f} %'.format(after_drift*100./after_elec))
 print('Events after photon cut: '+str(after_photon))
@@ -304,7 +317,7 @@ LightMap.save_model(path+'LightMap_'+name,lm_again.kind,lm_again)
 
 # make results plots and compute fitting metrics
 print('\nPlotting and saving the results...\n')
-mean,var,h_true_uniform,h_again_uniform = plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name)
+mean,var,h_true,h_again,h_true_uniform,h_again_uniform = plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name)
 
 # print fitting results
 print('Fitting results')
@@ -330,6 +343,8 @@ params_list = [[name,
                 np.array(val_losses),
                 np.sqrt(var),
                 mean,
+                h_true,
+                h_again,
                 h_true_uniform,
                 h_again_uniform
                 ]]
@@ -351,11 +366,26 @@ columns = ['name',
            'accuracy_std_dev',
            'accuracy_mean',
            'hist_true',
-           'hist_again'
+           'hist_again',
+           'hist_true_uniform',
+           'hist_again_uniform'
            ]
 
 params = pd.DataFrame(params_list,columns=columns)
 params.to_pickle(path + name + '_results.pkl',compression='gzip')
+
+"""
+# save data to make reconstruction pipeline plot
+weighted_radius = data.weighted_radius.values[cuts]
+z = data.z.values[cuts]
+eff = data.eff.values[cuts]
+tpc_r = tpc.r
+tpc_zmin = tpc.zmin
+tpc_zmax = tpc.zmax
+plot_stuff = weighted_radius,z,eff,tpc_r,tpc_zmin,tpc_zmax
+pickle.dump(plot_stuff,open('sample_data.pkl','wb'))
+"""
+
 print('Results saved to {:s}'.format(path+name+'_results.pkl'))
 
 if make_plots:

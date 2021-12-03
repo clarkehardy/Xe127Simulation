@@ -17,7 +17,7 @@ def plot_lm_rz(ax, lm, tpc, theta=0, vectorize=False, cbar=True):
     h = hl.hist_from_eval(f, vectorize=vectorize, bins=1000, range=rang)
     d = hl.plot2d(ax, h, cbar=cbar, **pkw)
     if cbar:
-        d['colorbar'].set_label(r'Collection Efficiency')
+        d['colorbar'].set_label(r'Photon Transport Efficiency')
     ax.set_xlabel(r'$r$ (mm)')
     ax.set_ylabel(r'$z$ (mm)')
     ax.set_aspect('equal')
@@ -41,8 +41,8 @@ def proj2d(x,y,xlabel='x',ylabel='y',bins=200,s=0.001,color='blue'):
     ax_scatter.scatter(x, y, color=color, s=s, alpha=0.005)
     xmin = 0
     ymin = 0
-    xmax = 30000
-    ymax = 30000
+    xmax = 25000
+    ymax = 25000
     binsx = np.linspace(xmin,xmax,bins)
     binsy = np.linspace(ymin,ymax,bins)
     ax_scatter.set_xlim((xmin,xmax))
@@ -97,12 +97,13 @@ def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     # plot raw scatter colored by efficiency
     fig,ax = plt.subplots(figsize=(3.5,5))
     sc = ax.scatter(data.weighted_radius.values[cuts],\
-                    data.z.values[cuts],c=data.eff.values[cuts],s=0.1,cmap='spring')
+                    data.z.values[cuts],c=data.eff.values[cuts],\
+                    s=0.1,cmap='spring',vmin=0.2,vmax=0.4)
     ax.set_xlabel(r'$r$ (mm)')
     ax.set_ylabel(r'$z$ (mm)')
     ax.set_title('Calibration Events')
-    cbar = fig.colorbar(sc)
-    cbar.set_label('Collection Efficiency')
+    cbar = fig.colorbar(sc,format='%.2f',ticks=[0.2,0.25,0.3,0.35,0.4])
+    cbar.set_label('Photon Transport Efficiency')
     ax.set_xlim([0,tpc.r])
     ax.set_ylim([tpc.zmin,tpc.zmax])
     ax.set_aspect('equal')
@@ -125,21 +126,25 @@ def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     fig.savefig(path+'fid_cut_'+name+'.png',bbox_inches='tight')
 
     # plot MC truth scatter plot
-    fig,ax_histx,ax_histy,ax_scatter = proj2d(data.fNTE.values,data.fInitNOP.values,xlabel='MC Truth Ionization (Number of Electrons)',\
+    fig,ax_histx,ax_histy,ax_scatter = proj2d(data.fNTE.values[cuts],data.fInitNOP.values[cuts],xlabel='MC Truth Ionization (Number of Electrons)',\
                                           ylabel='MC Truth Scintillation (Number of Photons)',s=0.2)
     fig.savefig(path+'MCTruth_'+name+'.png',bbox_inches='tight')
 
     # plot charge and light with selection cut
     xvals = np.linspace(0,26500,10)
     yvals = peak_sep(xvals)
-    fig,ax = plt.subplots(figsize=(4,3))
+    plt.rcParams.update({'font.size': 18})
+    fig,ax = plt.subplots(figsize=(8,6))
     ht = ax.hist2d(data.evt_charge_including_noise.values[cuts],data['Observed Light'][cuts],200,norm=mpl.colors.LogNorm())
     ax.set_xlabel('Detected Electrons')
     ax.set_ylabel('Detected Photons')
-    ax.plot(xvals,yvals,'--r',lw=1)
-    fig.colorbar(ht[3])
+    ax.set_xlim([8000,28000])
+    ax.set_ylim([100,1000])
+    ax.plot(xvals,yvals,'--r',lw=4)
+    cbar = fig.colorbar(ht[3])
     fig.tight_layout()
     fig.savefig(path+'charge_light_'+name+'.png',bbox_inches='tight')
+    plt.rcParams.update({'font.size': 10})
 
     # plot a histogram of the charge signal
     fig,ax = plt.subplots(figsize=(4,3))
@@ -161,15 +166,26 @@ def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     fig.savefig(path+'light_'+name+'.png',bbox_inches='tight')
 
     # plot a histogram of the light signal
-    fig,ax = plt.subplots(figsize=(4,3))
-    ax.hist([data.fInitNOP.values[cuts],data['Observed Light'][cuts]\
-             *np.mean(data.fInitNOP.values[cuts])/np.mean(data['Observed Light'][cuts])],\
-             bins=100,color=['darkorange','red'],histtype=u'step',density=False,label=['MC truth photons','Detected photons, scaled'])
-    ax.set_xlabel('Number of Photons')
-    ax.set_ylabel('Counts')
-    ax.legend(loc='best',prop={'size': 8})
+    plt.rcParams.update({'font.size': 18})
+    fig,ax = plt.subplots(figsize=(8,6))
+    truth_hist,truth_bins = np.histogram(data.fInitNOP.values[cuts],bins=100)
+    det_hist,det_bins = np.histogram(data['Observed Light'][cuts],bins=100)
+    truth_bins = (truth_bins[1:]+truth_bins[:-1])/2.
+    det_bins = (det_bins[1:]+det_bins[:-1])/2.
+    scale = truth_bins[np.argmax(truth_hist)]/det_bins[np.argmax(det_hist)]
+    ax.hist([data.fInitNOP.values[cuts],data['Observed Light'][cuts]*scale,\
+             data['Observed Light'][cuts]/0.1/lm_true(data.weighted_x.values[cuts],data.weighted_y.values[cuts],data.z.values[cuts])],\
+            bins=100,range=(0,30000),color=['darkorange','red','maroon'],histtype=u'step',density=False,\
+            label=['MC truth','No lightmap','Perfect lightmap'])
+    ax.set_xlabel('Scintillation (photons)')
+    ax.set_ylabel('Counts (A.U.)')
+    ax.set_xlim([0,30000])
+    y_vals = ax.get_yticks()
+    ax.set_yticklabels(['{:3.0f}'.format(x * 1e-4) for x in y_vals])
+    ax.legend(loc='best')
     fig.tight_layout()
     fig.savefig(path+'lighthist_'+name+'.png',bbox_inches='tight')
+    plt.rcParams.update({'font.size': 10})
 
     # plot efficiency curve for both peaks
     fig,ax = plt.subplots(figsize=(4,3))
@@ -198,6 +214,7 @@ def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
     h_true = hl.hist_from_eval(f, vectorize=False, bins=1000, range=rang)
     f = lambda r, z: lm_again(r, np.repeat(0, r.size), z, cyl=True)
     h_again = hl.hist_from_eval(f, vectorize=False, bins=1000, range=rang)
+
     # plot differences between LightMaps
     fig, ax = plt.subplots(figsize=(4,5))
     d = hl.plot2d(ax, h_true / h_again, cbar=True, cmap='RdBu_r',vmin=0.95,vmax=1.05)
@@ -230,4 +247,4 @@ def plot_results(tpc,lm_true,lm_again,rlim,zlim,path,name):
     ax.set_ylabel('Counts')
     fig.savefig(path+'accuracy_'+name+'.png',bbox_inches='tight')
 
-    return mean,var,h_true_uniform,h_again_uniform
+    return mean,var,h_true,h_again,h_true_uniform,h_again_uniform
