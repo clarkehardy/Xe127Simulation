@@ -41,8 +41,6 @@ def ComputeObservedLight( dfsim ):
     
     return output_dict
 
-def ComputeObservedLight( df ):
-    return {}
 
 #####################################################################################
 # COMPUTE OBSERVED CHARGE
