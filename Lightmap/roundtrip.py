@@ -84,9 +84,9 @@ if not make_plots:
 # **********************************************************************************************************
 
 # cut to select high energy peak
-cl_slope = -0.0915
+cl_slope = -0.1875
 def peak_sep(x):
-    return cl_slope*x+1980
+    return cl_slope*x+3960
 
 # cut out any other peaks
 def cl_cut(x,y):

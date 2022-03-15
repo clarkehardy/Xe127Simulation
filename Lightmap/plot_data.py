@@ -139,7 +139,7 @@ def make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep):
     ax.set_xlabel('Detected Electrons')
     ax.set_ylabel('Detected Photons')
     ax.set_xlim([8000,28000])
-    ax.set_ylim([100,1000])
+    ax.set_ylim([200,1700])
     ax.plot(xvals,yvals,'--r',lw=4)
     cbar = fig.colorbar(ht[3])
     fig.tight_layout()
