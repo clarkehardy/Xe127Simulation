@@ -6,3 +6,4 @@
 *.out
 *.err
 *__pycache__*
+*.ipynb_checkpoints*
