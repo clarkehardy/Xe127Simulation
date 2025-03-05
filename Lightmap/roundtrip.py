@@ -54,6 +54,7 @@ parser.add_argument('description',type=str)
 parser.add_argument('standoff',type=float)
 parser.add_argument('events',type=int)
 parser.add_argument('fit_type',type=str)
+parser.add_argument('-save_thesis_data', action='store_true', default=False)
 
 args = parser.parse_args()
 input_files = args.input_files
@@ -71,6 +72,7 @@ ensemble_size = args.ensemble_size
 sigma = args.sigma
 seed = args.seed
 validation = args.validation
+save_thesis_data = args.save_thesis_data
 
 if fit_type!='NN' and fit_type!='KS':
     print('\nFit type not recognized. Exiting.\n')
@@ -124,7 +126,7 @@ d = plot_lm_rz(ax,lm_true,tpc)
 ax.set_title('Truth Lightmap')
 if make_plots:
     fig.tight_layout()
-fig.savefig(path+'original.png',bbox_inches='tight')
+fig.savefig(path+'original_'+name+'.png',bbox_inches='tight')
 
 # *********************************************************************************************************
 # LOOP THROUGH ALL DATASETS
@@ -244,6 +246,27 @@ if make_plots:
     print('Saving some relevant plots in {:s}\n'.format(path))
     make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep)
     plt.show()
+
+if save_thesis_data:
+    # save data for thesis plots
+    weighted_radius = data.weighted_radius.values[cuts]
+    z = data.z.values[cuts]
+    eff = data.eff.values[cuts]
+    tpc_r = tpc.r
+    tpc_zmin = tpc.zmin
+    tpc_zmax = tpc.zmax
+    xvals = np.linspace(0,26500,10)
+    yvals = peak_sep(xvals)
+    num_thermal_electrons = data['fNTE'][cuts]
+    num_init_optical_phot = data['fInitNOP'][cuts]
+    evt_charge_incl_noise = data['evt_charge_including_noise'][cuts]
+    observed_light = data['Observed Light'][cuts]
+    x_values = data.weighted_x.values[cuts]
+    y_values = data.weighted_y.values[cuts]
+    z_values = data.z.values[cuts]
+    plot_stuff = weighted_radius, z,eff, tpc_r, tpc_zmin, tpc_zmax, xvals, yvals, num_thermal_electrons, \
+                 num_init_optical_phot, evt_charge_incl_noise, observed_light, x_values, y_values, z_values
+    pickle.dump(plot_stuff, open('sample_data_'+name+'.pkl','wb'))
 
 if not train:
     sys.exit()
