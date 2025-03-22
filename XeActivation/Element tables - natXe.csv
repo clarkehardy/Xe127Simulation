@@ -1,0 +1,10 @@
+Element,Element fraction,A,Isotope fraction,Capture daughter,Daughter halflife (s),Daughter radiation,Daughter energy (keV),Daughter decay product,DDP A
+Xe,1,124,0.00095,125,60840,EC,300,I,125
+Xe,1,126,0.00089,127,3140208,EC,400,I,127
+Xe,1,128,0.0191,129,inf,None,0,None,0
+Xe,1,129,0.26401,130,inf,None,0,None,0
+Xe,1,130,0.04071,131,inf,None,0,None,0
+Xe,1,131,0.21232,132,inf,None,0,None,0
+Xe,1,132,0.26909,133,453340.8,B,80,Cs,133
+Xe,1,134,0.10436,135,32904,B,0,Cs,135
+Xe,1,136,0.0857,137,228,B,600,Cs,137
