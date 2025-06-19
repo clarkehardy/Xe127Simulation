@@ -74,7 +74,7 @@ seed = args.seed
 validation = args.validation
 save_thesis_data = args.save_thesis_data
 
-if fit_type!='NN' and fit_type!='KS':
+if fit_type!='NN' and fit_type!='KS' and fit_type!='hist':
     print('\nFit type not recognized. Exiting.\n')
     sys.exit()
 
@@ -226,6 +226,11 @@ print('Fiducial cut efficiency: {:.1f} %'.format(after_fiducial*100./after_photo
 print('Events after charge/light cut: '+str(after_chargelight))
 print('Charge/light cut efficiency: {:.1f} %\n'.format(after_chargelight*100./after_fiducial))
 
+# print info on the calibration peak
+high_e_mean = np.mean(data.fInitNOP.values[cuts & peak_cond])
+high_e_std = np.std(data.fInitNOP.values[cuts & peak_cond])
+print('High energy scintillation peak width: {:.4f}\n'.format(high_e_std/high_e_mean))
+
 # compute mean number of photons for each peak
 peaks = np.array((0,0))
 for j in range(2):
@@ -247,7 +252,7 @@ if make_plots:
     make_figs(tpc,lm_true,data,cuts,path,name,rlim,zlim,peak_sep)
     plt.show()
 
-if save_thesis_data:
+if save_thesis_data and not train:
     # save data for thesis plots
     weighted_radius = data.weighted_radius.values[cuts]
     z = data.z.values[cuts]
@@ -309,6 +314,10 @@ if fit_type=='KS':
     if sigma==None:
         sigma = 50
     lm_again = LightMap.total.LightMapKS(tpc, sigma, points=50, batch_size=1000)
+
+if fit_type=='hist':
+    ensemble_size = 1
+    lm_again = LightMap.total.LightMapHistRZ(tpc)
 
 # fit the lightmap
 print('Fitting a lightmap to the data...\n')
@@ -406,8 +415,27 @@ tpc_r = tpc.r
 tpc_zmin = tpc.zmin
 tpc_zmax = tpc.zmax
 plot_stuff = weighted_radius,z,eff,tpc_r,tpc_zmin,tpc_zmax
-pickle.dump(plot_stuff,open('sample_data.pkl','wb'))
+pickle.dump(plot_stuff,open('sample_data_'+name+'.pkl','wb'))
 """
+
+weighted_radius = data.weighted_radius.values[cuts]
+z = data.z.values[cuts]
+eff = data.eff.values[cuts]
+tpc_r = tpc.r
+tpc_zmin = tpc.zmin
+tpc_zmax = tpc.zmax
+xvals = np.linspace(0,26500,10)
+yvals = peak_sep(xvals)
+num_thermal_electrons = data['fNTE'][cuts]
+num_init_optical_phot = data['fInitNOP'][cuts]
+evt_charge_incl_noise = data['evt_charge_including_noise'][cuts]
+observed_light = data['Observed Light'][cuts]
+x_values = data.weighted_x.values[cuts]
+y_values = data.weighted_y.values[cuts]
+z_values = data.z.values[cuts]
+plot_stuff = weighted_radius, z,eff, tpc_r, tpc_zmin, tpc_zmax, xvals, yvals, num_thermal_electrons, \
+             num_init_optical_phot, evt_charge_incl_noise, observed_light, x_values, y_values, z_values
+pickle.dump(plot_stuff, open('sample_data_'+name+'.pkl','wb'))
 
 print('Results saved to {:s}'.format(path+name+'_results.pkl'))
 
